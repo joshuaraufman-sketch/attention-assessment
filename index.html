@@ -300,14 +300,153 @@ function evaluatePathways(scores, sectionAvgs) {
 
   if (!hasEnoughData) return null;
 
-  // ── Build interpretation ──
-  const interpretations = {
-    A: "Pattern most consistent with trait attentional inefficiency (ADHD phenotype). The combination of lifelong course, stable presentation, cross-context impairment, and weak affective coupling argues against a state-driven explanation.",
-    B: "Pattern most consistent with state-dependent attentional impairment. High variability, context dependence, and/or time-on-task decline indicate a modifiable driver rather than a fixed deficit. ADHD diagnosis should be deferred.",
-    C: "Attentional disturbance appears secondary to affective dysregulation. The strong coupling between mood state and attentional failure suggests treating the affective driver first and reassessing attention after stabilization.",
-    D: "Apparent inattention reflects internal attentional capture, not a primary attentional deficit. Attentional capacity is intact but redirected toward internal content (obsessions, rumination, worry, delusional material).",
-    E: "Pattern consistent with global cognitive slowing. The foggy/slowed quality with low energy and reduced tenacity suggests a systemic process (depression, medical, medication, sleep deprivation) rather than a selective attentional deficit.",
+  // ── Build interpretation (case-specific, draws on actual computed features) ──
+  const sleepSensitive = s("var_3") != null && s("var_3") >= 3;
+  const stressSensitive = s("var_4") != null && s("var_4") >= 3;
+  const runnerNearMiss = runner && (runner.met / runner.total) >= 0.5;
+  const joinList = (arr, max) => {
+    let items = arr.filter(Boolean);
+    if (max) items = items.slice(0, max);
+    if (items.length === 0) return '';
+    if (items.length === 1) return items[0];
+    if (items.length === 2) return `${items[0]} and ${items[1]}`;
+    return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
   };
+
+  const buildInterpretation = (id) => {
+    if (id === 'A') {
+      const findings = joinList([
+        stablePattern && 'a stable, lifelong course',
+        crossContext && 'impairment that crosses settings',
+        lowVar && 'low intra- and inter-session variability',
+        weakAffect && 'attention that does not track mood state',
+        externalCapture && 'external distractibility',
+        taskAvoidance && !externalCapture && 'avoidance of effortful tasks',
+      ], 3);
+      const preservedNote = preservedTasks
+        ? ' Structured tasks remain relatively preserved, which is consistent with ADHD’s typical dissociation between coercive testing and naturalistic functioning — capacity is intact when external scaffolding is high, and degrades as demands become self-directed.'
+        : '';
+      let differential = '';
+      if (runnerNearMiss && runner.id === 'C') {
+        differential = ' Affective features are present but appear secondary; the trait architecture is preserved across mood states, which argues against a primarily affective driver.';
+      } else if (runnerNearMiss && runner.id === 'B') {
+        differential = ' Some state sensitivity was noted, but the lifelong course and low variability outweigh it and point at a fixed trait rather than a modifiable driver.';
+      } else if (runnerNearMiss && runner.id === 'E') {
+        differential = ' Slowing/fatigue features are present but do not by themselves explain the cross-context, lifelong picture.';
+      }
+      return `Pattern most consistent with trait attentional inefficiency (ADHD phenotype). The conclusion rests on ${findings || 'the configuration of trait features described above'}, which together argue against a state-driven explanation.${preservedNote}${differential}`;
+    }
+
+    if (id === 'B') {
+      const drivers = [];
+      if (sleepSensitive) drivers.push('sleep');
+      if (stressSensitive) drivers.push('acute stress');
+      if (timeOnTaskDecline) drivers.push('sustained effort (time-on-task decline)');
+      if (contextDependent) drivers.push('environmental context');
+      const driverPhrase = drivers.length ? joinList(drivers) : 'identifiable state factors';
+      const varNote = highVar
+        ? ' The marked variability indicates a system that can attend when conditions allow, which is incompatible with a fixed trait deficit.'
+        : '';
+      let differential = '';
+      if (runnerNearMiss && runner.id === 'A') {
+        differential = ' ADHD remains on the differential, but committing to a trait diagnosis is premature while modifiable drivers are unaddressed.';
+      } else if (runnerNearMiss && runner.id === 'C') {
+        differential = ' An affective contribution is plausible and may be one of the modifiable drivers worth characterizing.';
+      } else if (runnerNearMiss && runner.id === 'E') {
+        differential = ' Cognitive slowing features overlap, but the variability pattern argues for a state-dependent rather than uniformly throttled process.';
+      }
+      return `Pattern most consistent with state-dependent attentional impairment, with the principal driver(s) appearing to be ${driverPhrase}.${varNote} A fixed deficit is unlikely; addressing the modifiable factor(s) and reassessing should precede any trait diagnosis.${differential}`;
+    }
+
+    if (id === 'C') {
+      const supports = joinList([
+        strongAffect && 'tight coupling between mood state and attentional failure',
+        emotionalCapture && 'attentional capture by emotional content',
+        internalCapture && 'capture by internal mental content',
+        highVar && 'marked variability that tracks emotional state',
+        contextDependent && 'context-sensitive performance',
+      ], 3);
+      const supportSentence = supports
+        ? `Supporting findings include ${supports}.`
+        : `The decision rests on the strong coupling between affect and attention noted in the dynamics section.`;
+      const adhdRunnerNote = (runnerNearMiss && runner.id === 'A')
+        ? ' Trait inattention was a near-miss alternative, but the attentional failure waxes and wanes with mood rather than presenting as a fixed deficit, which argues against committing to ADHD before the affective state is treated.'
+        : '';
+
+      if (affectType === 1) {
+        const phenomBit = foggySlowed
+          ? ' The foggy/slowed phenomenology paired with low-energy affect is a depressive cognitive signature rather than primary inattention.'
+          : ' The low-energy affective profile points at a depressive cognitive process rather than primary inattention.';
+        return `Attentional disturbance appears secondary to a depressive process; cognitive engagement is throttled downstream of mood rather than failing intrinsically. ${supportSentence}${phenomBit} Effective antidepressant treatment is the primary intervention — attentional complaints typically remit with mood recovery, and a stimulant trial before that risks treating an epiphenomenon.${adhdRunnerNote}`;
+      }
+      if (affectType === 2) {
+        const phenomBit = (racing || scattered)
+          ? ` ${racing ? 'Racing' : 'Scattered'} phenomenology is consistent with anxious cognitive overactivation rather than under-arousal.`
+          : '';
+        return `Attentional disturbance appears secondary to anxiety; working memory is hijacked by worry and threat-monitoring rather than failing intrinsically. ${supportSentence}${phenomBit} Anxiety treatment (SSRI, CBT, or anxiolytic) should precede an ADHD work-up — the distinguishing feature is that anxious inattention carries distress about failing, whereas trait inattention more often presents with frustration or indifference.${adhdRunnerNote}`;
+      }
+      if (affectType === 3) {
+        const phenomBit = blank
+          ? ' Blank/disengaged phenomenology in the setting of dysphoric activation is particularly suggestive of a mixed depressive state, in which over-aroused negative affect coexists with cognitive shutdown.'
+          : ' The combination of negative affect and irritable arousal is suggestive of a mixed or dysphoric mood episode rather than unipolar depression alone.';
+        return `Attentional disturbance appears driven by a mixed/dysphoric affective state in which irritability and negative arousal disrupt sustained attention. ${supportSentence}${phenomBit} This presentation can mimic ADHD strikingly — irritability plus inattention is a classic mixed-features look — but a stimulant before mood characterization risks worsening dysphoria; longitudinal data and consideration of a mood stabilizer are preferable first steps.${adhdRunnerNote}`;
+      }
+      if (affectType === 4) {
+        const phenomBit = racing
+          ? ' Racing phenomenology raises specific concern for hypomanic-spectrum cognition rather than primary inattention.'
+          : ' The activated affective profile raises concern for hypomanic-spectrum cognition rather than primary inattention.';
+        return `Attentional disturbance appears driven by affective activation; the system is over-aroused and disorganized rather than under-attentive. ${supportSentence}${phenomBit} A bipolar-spectrum work-up (history of mood elevation, decreased need for sleep) is essential before any stimulant consideration, which could destabilize an underlying mood disorder; mood stabilization comes first.${adhdRunnerNote}`;
+      }
+      return `Attentional disturbance appears secondary to affective dysregulation. ${supportSentence} Characterizing the affective state more precisely is the next step before any trait attribution.${adhdRunnerNote}`;
+    }
+
+    if (id === 'D') {
+      const supports = joinList([
+        internalCapture && 'attention dominantly captured by internal content',
+        preservedTasks && 'preserved performance on structured tasks (capacity is intact)',
+        crowded && 'crowded/overcontrolled phenomenology',
+        racing && 'a racing thought stream',
+        blank && 'episodes of blank disengagement',
+      ], 3);
+      let contentHypothesis;
+      if (crowded) {
+        contentHypothesis = 'The crowded, overcontrolled quality is most suggestive of obsessive-compulsive content (intrusive, ego-dystonic, resisted) or trauma-related re-experiencing rather than ordinary worry.';
+      } else if (racing) {
+        contentHypothesis = 'A racing thought stream points at anxious rumination, hypomanic-spectrum activation, or stimulant-related cognition; the differential narrows on whether the content is goal-driven or worry-driven.';
+      } else if (blank) {
+        contentHypothesis = 'Blank/disengaged episodes raise the possibility of dissociation, absence-like phenomena, or severe ruminative withdrawal rather than a typical preoccupation.';
+      } else {
+        contentHypothesis = 'The most likely content is ruminative depressive thought or generalized worry; if the material is bizarre or ego-syntonic, psychotic-spectrum preoccupation should be considered.';
+      }
+      const preservedClause = preservedTasks
+        ? ' Preserved structured-task performance reinforces that capacity is not the problem — attention is being spent elsewhere.'
+        : '';
+      return `Apparent inattention reflects internal attentional capture rather than a primary attentional deficit; capacity is intact but redirected. ${supports ? `Supporting findings include ${supports}. ` : ''}${contentHypothesis}${preservedClause} The therapeutic target is the absorbing content (OCD, rumination, PTSD intrusions, psychosis) rather than the attention system itself.`;
+    }
+
+    if (id === 'E') {
+      const supports = joinList([
+        lowEnergy && 'a low-energy affective profile',
+        reducedTenacity && 'reduced tenacity for sustained effort',
+        lowVar && 'low variability (the impairment is constant rather than fluctuating)',
+      ], 3);
+      let mechanism;
+      if (foggySlowed && !blank) {
+        mechanism = 'The foggy/slowed quality combined with low energy points most strongly at a depressive or anhedonic cognitive process — the system is engaged but throttled.';
+      } else if (blank && !foggySlowed) {
+        mechanism = 'Blank/disengaged phenomenology — distinct from cognitive fog — points more toward a sedating-medication effect, a primary medical process (thyroid, B12, sleep-disordered breathing), or anhedonic withdrawal, rather than effortful slowing.';
+      } else if (foggySlowed && blank) {
+        mechanism = 'Mixed foggy and blank phenomenology suggests a heavily sedating contributor — medication burden, untreated sleep-disordered breathing, or severe depression — rather than a single mechanism.';
+      } else {
+        mechanism = 'The most likely contributors are depressive, medical (thyroid, B12, sleep-disordered breathing), or medication-related rather than a selective attentional deficit.';
+      }
+      return `Pattern consistent with global cognitive slowing rather than a selective attentional deficit. ${supports ? `Supporting findings include ${supports}. ` : ''}${mechanism} Workup should target systemic contributors (mood, sleep, medications, basic medical screen) before any inattention diagnosis is entertained.`;
+    }
+
+    return '';
+  };
+
+  const interpretation = buildInterpretation(primary.id);
 
   const nextStepsMap = {
     A: ["Confirm childhood onset with collateral if possible", "Confirm cross-setting impairment (work, home, social)", "Assess functional consequences and adaptive strategies", "Consider stimulant or non-stimulant trial"],
@@ -317,17 +456,15 @@ function evaluatePathways(scores, sectionAvgs) {
     E: ["Screen for depression (PHQ-9, clinical interview)", "Review sleep hygiene and sleep disorders", "Medical workup: thyroid, B12, metabolic panel", "Medication review — sedating agents, anticholinergics"],
   };
 
-  // Pathway C sub-branching based on affect type
+  // Pathway C sub-branching for next-steps (interpretation handles its own affect-aware branching)
   if (primary.id === 'C') {
-    const subBranches = {
-      1: { consider: "Depression spectrum", steps: ["Treat depression first", "Attentional complaints often resolve with effective antidepressant treatment", "Reassess attention after mood stabilization"] },
-      2: { consider: "Anxiety spectrum", steps: ["Treat anxiety first — anxiolytic or SSRI", "Differentiate from ADHD: anxious inattention has distress about failure; ADHD-pattern has frustration", "Reassess attention after anxiety management"] },
-      3: { consider: "Mixed depressive state / dysphoric mood episode", steps: ["Evaluate for mixed features (DSM-5 specifier)", "Mood stabilizer may be indicated before stimulant consideration", "Irritability + inattention mimics ADHD — do not diagnose without longitudinal data"] },
-      4: { consider: "Bipolar spectrum / activation syndrome", steps: ["Assess for mania/hypomania history", "Check sleep patterns — decreased need is a red flag", "Stimulants are contraindicated if bipolar is suspected", "Mood stabilizer first"] },
+    const subBranchSteps = {
+      1: ["Treat depression first", "Attentional complaints often resolve with effective antidepressant treatment", "Reassess attention after mood stabilization"],
+      2: ["Treat anxiety first — anxiolytic or SSRI", "Differentiate from ADHD: anxious inattention has distress about failure; ADHD-pattern has frustration", "Reassess attention after anxiety management"],
+      3: ["Evaluate for mixed features (DSM-5 specifier)", "Mood stabilizer may be indicated before stimulant consideration", "Irritability + inattention mimics ADHD — do not diagnose without longitudinal data"],
+      4: ["Assess for mania/hypomania history", "Check sleep patterns — decreased need is a red flag", "Stimulants are contraindicated if bipolar is suspected", "Mood stabilizer first"],
     };
-    const branch = subBranches[affectType] || { consider: "Affective disorder (type unclear)", steps: ["Characterize the affective state more precisely", "Treat mood/anxiety before attributing to ADHD"] };
-    nextStepsMap.C = branch.steps;
-    interpretations.C += ` Sub-pattern most consistent with: ${branch.consider}.`;
+    nextStepsMap.C = subBranchSteps[affectType] || ["Characterize the affective state more precisely", "Treat mood/anxiety before attributing to ADHD"];
   }
 
   // ── Conflict detection ──
@@ -393,7 +530,7 @@ function evaluatePathways(scores, sectionAvgs) {
     primary,
     runner: runner && runner.met >= 1 ? runner : null,
     isUrgent: false,
-    interpretation: interpretations[primary.id],
+    interpretation,
     nextSteps: nextStepsMap[primary.id],
     implication,
     conflicts,
