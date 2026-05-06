@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finger Counting — Interviewability Screen</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body style="margin:0;padding:0">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useMemo } = React;
+
+const IS_CHILD_MODE = (() => {
+  try { return new URLSearchParams(window.location.search).get('parent') === 'true'; } catch { return false; }
+})();
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root {
+    --c-bg: #faf9f7; --c-surface: #ffffff; --c-text: #1a1a1a;
+    --c-text-secondary: #5a5a5a; --c-text-muted: #8a8a8a;
+    --c-border: #e0ddd8; --c-border-light: #eeedea;
+    --c-accent: #2c5f4a; --c-accent-light: #e8f0ec; --c-accent-hover: #1e4535;
+    --c-warn: #c0392b; --c-warn-bg: #fdf0ef;
+    --c-pass: #27ae60; --c-fail: #c0392b;
+    --c-pass-bg: #e8f5ed; --c-fail-bg: #fdf0ef;
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --radius: 8px; --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--c-bg); }
+
+  .app { font-family: var(--font-body); color: var(--c-text); min-height: 100vh; padding: 24px 16px 80px; max-width: 920px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid var(--c-accent); }
+  .header h1 { font-family: var(--font-display); font-size: 1.85rem; font-weight: 700; color: var(--c-accent); }
+  .header .subtitle { font-size: 0.85rem; color: var(--c-text-muted); margin-top: 6px; }
+
+  .card { background: var(--c-surface); border-radius: var(--radius); border: 1px solid var(--c-border-light); box-shadow: var(--shadow-sm); margin-bottom: 20px; overflow: hidden; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--c-border-light); background: var(--c-accent-light); }
+  .card-header h2 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--c-accent); }
+  .card-body { padding: 18px 20px; }
+
+  .instructions { font-size: 0.85rem; line-height: 1.6; color: var(--c-text-secondary); }
+  .instructions ul { margin: 8px 0 8px 20px; }
+  .instructions li { margin-bottom: 4px; }
+  .instructions strong { color: var(--c-text); }
+
+  /* ─── Trial display ─── */
+  .trial-area {
+    text-align: center;
+    padding: 24px 16px;
+  }
+
+  .finger-display {
+    font-family: var(--font-mono);
+    font-size: 5rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .finger-prompt {
+    font-size: 0.9rem;
+    color: var(--c-text-secondary);
+    margin-bottom: 16px;
+  }
+
+  .trial-response-btns {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .trial-btn {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: var(--radius);
+    border: 2px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text-secondary);
+    cursor: pointer;
+    transition: all 0.12s;
+    min-width: 120px;
+  }
+
+  .trial-btn:hover { border-color: var(--c-accent); color: var(--c-accent); }
+  .trial-btn.pass-btn:hover { border-color: var(--c-pass); color: var(--c-pass); }
+  .trial-btn.fail-btn:hover { border-color: var(--c-fail); color: var(--c-fail); }
+  .trial-btn.slow-btn:hover { border-color: #e67e22; color: #e67e22; }
+
+  /* ─── Trial log ─── */
+  .trial-log {
+    margin-top: 20px;
+  }
+
+  .trial-log-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--c-border-light);
+    font-size: 0.85rem;
+  }
+
+  .trial-log-row:last-child { border-bottom: none; }
+
+  .trial-num {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    width: 30px;
+    text-align: center;
+  }
+
+  .trial-fingers {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 80px;
+  }
+
+  .trial-result {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+  }
+
+  .trial-result.pass { background: var(--c-pass-bg); color: var(--c-pass); }
+  .trial-result.fail { background: var(--c-fail-bg); color: var(--c-fail); }
+  .trial-result.slow { background: #fef5e7; color: #e67e22; }
+
+  /* ─── Verdict ─── */
+  .verdict-panel {
+    padding: 18px 20px;
+    border-radius: var(--radius);
+    font-size: 0.88rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .verdict-panel.pass-verdict { background: var(--c-pass-bg); border: 2px solid var(--c-pass); color: #1a5c32; }
+  .verdict-panel.marginal-verdict { background: #fef5e7; border: 2px solid #e67e22; color: #7a4a10; }
+  .verdict-panel.fail-verdict { background: var(--c-fail-bg); border: 2px solid var(--c-fail); color: var(--c-fail); }
+
+  .verdict-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .btn { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; padding: 9px 18px; border-radius: var(--radius); border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--c-accent); color: white; }
+  .btn-primary:hover { background: var(--c-accent-hover); }
+  .btn-secondary { background: var(--c-surface); color: var(--c-text-secondary); border: 1px solid var(--c-border); }
+  .btn-send { background: #1a6b4a; color: white; border: 2px solid #1a6b4a; }
+  .btn-send:hover { background: #145538; }
+
+  .send-banner { padding: 10px 16px; margin-bottom: 20px; background: #e8f0ec; border: 1px solid #b8d4c4; border-radius: var(--radius); font-size: 0.82rem; color: var(--c-accent); line-height: 1.5; }
+  .action-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .tip { display: flex; gap: 10px; padding: 10px 14px; background: #fff8e6; border-left: 3px solid #e0a040; border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.8rem; line-height: 1.5; color: #7a5a10; margin-top: 12px; }
+  .footer { text-align: center; font-size: 0.72rem; color: var(--c-text-muted); margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--c-border-light); line-height: 1.6; }
+`;
+
+const NUM_TRIALS = 5;
+
+const generateFingerCount = () => {
+  // 1-10 fingers, weighted toward mid-range (more discriminating)
+  const weights = [1, 2, 3, 3, 3, 3, 3, 3, 2, 1]; // index = fingers-1
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * totalWeight;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return i + 1;
+  }
+  return 5;
+};
+
+function FingerCounting() {
+  const [trials, setTrials] = useState(() =>
+    Array.from({ length: NUM_TRIALS }, () => ({
+      fingers: generateFingerCount(),
+      result: null, // 'pass' | 'fail' | 'slow'
+    }))
+  );
+  const [currentTrial, setCurrentTrial] = useState(0);
+  const [sendStatus, setSendStatus] = useState('');
+
+  const recordResult = useCallback((result) => {
+    setTrials(prev => {
+      const next = [...prev];
+      next[currentTrial] = { ...next[currentTrial], result };
+      return next;
+    });
+    if (currentTrial < NUM_TRIALS - 1) {
+      setCurrentTrial(prev => prev + 1);
+    }
+  }, [currentTrial]);
+
+  const allDone = trials.every(t => t.result != null);
+
+  const results = useMemo(() => {
+    if (!allDone) return null;
+    const passes = trials.filter(t => t.result === 'pass').length;
+    const slows = trials.filter(t => t.result === 'slow').length;
+    const fails = trials.filter(t => t.result === 'fail').length;
+
+    // task_6 anchors:
+    // 1: "Unable to perform"
+    // 2: "Frequent errors"
+    // 3: "Occasional errors"
+    // 4: "Accurate but slow"
+    // 5: "Accurate and prompt"
+    let suggestedScore;
+    if (fails >= 4) suggestedScore = 1;
+    else if (fails >= 2) suggestedScore = 2;
+    else if (fails >= 1) suggestedScore = 3;
+    else if (slows >= 2) suggestedScore = 4;
+    else suggestedScore = 5;
+
+    // Verdict for gating
+    let verdict;
+    if (fails >= 3) verdict = 'fail';
+    else if (fails >= 1 || slows >= 3) verdict = 'marginal';
+    else verdict = 'pass';
+
+    return { passes, slows, fails, suggestedScore, verdict };
+  }, [trials, allDone]);
+
+  const regenerate = useCallback(() => {
+    setTrials(Array.from({ length: NUM_TRIALS }, () => ({
+      fingers: generateFingerCount(),
+      result: null,
+    })));
+    setCurrentTrial(0);
+  }, []);
+
+  const sendToAssessment = useCallback(() => {
+    if (!results) return;
+    const payload = {
+      tool: 'finger_counting', version: 1,
+      results: { passes: results.passes, slows: results.slows, fails: results.fails, verdict: results.verdict },
+      suggestedScores: { task_6: results.suggestedScore },
+    };
+    let sent = false;
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'bedside-tool-result', payload }, '*');
+        sent = true;
+      }
+    } catch (e) {}
+    if (sent) {
+      setSendStatus('Sent');
+    } else {
+      try { navigator.clipboard.writeText(JSON.stringify(payload)); } catch {
+        const ta = document.createElement('textarea');
+        ta.value = JSON.stringify(payload); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      setSendStatus('Copied — paste in Assessment');
+    }
+    setTimeout(() => setSendStatus(''), 3000);
+  }, [results]);
+
+  const activeTrial = trials[currentTrial];
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <div className="header">
+          <h1>Finger Counting — Interviewability</h1>
+          <div className="subtitle">Basic screening probe for directed task engagement</div>
+        </div>
+
+        {IS_CHILD_MODE && (
+          <div className="send-banner">
+            Opened from Clinical Attention Assessment. When finished, use <strong>"Send to Assessment"</strong> to transfer results back.
+          </div>
+        )}
+
+        <div className="card">
+          <div className="card-header"><h2>Administration</h2></div>
+          <div className="card-body">
+            <div className="instructions">
+              <ul>
+                <li>Hold up both hands and display the indicated number of raised fingers.</li>
+                <li>Ask the patient: <strong>"How many fingers am I holding up?"</strong></li>
+                <li>Record: <strong>Pass</strong> (correct and prompt), <strong>Slow</strong> (correct but delayed), or <strong>Fail</strong> (incorrect or unable).</li>
+                <li>This is a <strong>gating test</strong>: if the patient cannot do this, more complex tasks are unlikely to yield valid results.</li>
+                <li>Requires minimal language — useful for patients with aphasia or limited English.</li>
+              </ul>
+            </div>
+            <div className="tip">
+              💡 This probe simultaneously tests visual attention, counting, and task comprehension. Failure here should recalibrate your expectations for all subsequent testing — digit span, serial 7s, and CPT results from a patient who fails this probe should be interpreted with extreme caution.
+            </div>
+          </div>
+        </div>
+
+        {/* Active trial */}
+        {!allDone && (
+          <div className="card">
+            <div className="card-header"><h2>Trial {currentTrial + 1} of {NUM_TRIALS}</h2></div>
+            <div className="card-body">
+              <div className="trial-area">
+                <div className="finger-display">{activeTrial.fingers}</div>
+                <div className="finger-prompt">Hold up <strong>{activeTrial.fingers}</strong> finger{activeTrial.fingers !== 1 ? 's' : ''} and ask the patient to count them.</div>
+                <div className="trial-response-btns">
+                  <button className="trial-btn pass-btn" onClick={() => recordResult('pass')}>✓ Correct & prompt</button>
+                  <button className="trial-btn slow-btn" onClick={() => recordResult('slow')}>⏱ Correct but slow</button>
+                  <button className="trial-btn fail-btn" onClick={() => recordResult('fail')}>✗ Incorrect / unable</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Trial log */}
+        {trials.some(t => t.result != null) && (
+          <div className="card">
+            <div className="card-header"><h2>Trial Log</h2></div>
+            <div className="card-body">
+              <div className="trial-log">
+                {trials.map((t, i) => (
+                  t.result && (
+                    <div className="trial-log-row" key={i}>
+                      <div className="trial-num">{i + 1}</div>
+                      <div className="trial-fingers">{t.fingers} finger{t.fingers !== 1 ? 's' : ''}</div>
+                      <div className={`trial-result ${t.result}`}>
+                        {t.result === 'pass' ? 'Correct & prompt' : t.result === 'slow' ? 'Correct but slow' : 'Incorrect / unable'}
+                      </div>
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Verdict */}
+        {results && (
+          <>
+            <div className={`verdict-panel ${results.verdict}-verdict`}>
+              <div className="verdict-title">
+                {results.verdict === 'pass' && '✓ Interviewability: Pass'}
+                {results.verdict === 'marginal' && '⚠ Interviewability: Marginal'}
+                {results.verdict === 'fail' && '✗ Interviewability: Fail'}
+              </div>
+              {results.verdict === 'pass' && (
+                <p>The patient can engage with directed tasks. Proceed with formal attentional testing (digit span, CPT, serial subtraction). Results from structured tasks should be interpretable.</p>
+              )}
+              {results.verdict === 'marginal' && (
+                <p>The patient showed inconsistent or slow performance on this basic probe. Structured task results should be interpreted with caution — they may underestimate true attentional capacity (if the patient is slow but accurate) or may not be valid indicators (if errors occurred). Clinical observation carries more weight than formal test scores in this case.</p>
+              )}
+              {results.verdict === 'fail' && (
+                <p>The patient could not reliably engage with even this simple directed task. <strong>Formal attentional testing is unlikely to yield valid results.</strong> Base your attentional assessment on behavioral observation and orientation testing rather than structured tasks. Consider whether the impairment reflects a visual/perceptual deficit, severe attentional impairment (delirium level), aphasia, or refusal/effort issues.</p>
+              )}
+            </div>
+
+            <div className="card">
+              <div className="card-header"><h2>Results</h2></div>
+              <div className="card-body" style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <div className="result-card" style={{ minWidth: 100 }}>
+                  <div className="result-label">Pass</div>
+                  <div className="result-value" style={{ color: 'var(--c-pass)' }}>{results.passes}</div>
+                </div>
+                <div className="result-card" style={{ minWidth: 100 }}>
+                  <div className="result-label">Slow</div>
+                  <div className="result-value" style={{ color: '#e67e22' }}>{results.slows}</div>
+                </div>
+                <div className="result-card" style={{ minWidth: 100 }}>
+                  <div className="result-label">Fail</div>
+                  <div className="result-value" style={{ color: 'var(--c-fail)' }}>{results.fails}</div>
+                </div>
+                <div className="result-card" style={{ minWidth: 100 }}>
+                  <div className="result-label">Score</div>
+                  <div className="result-value" style={{ color: 'var(--c-accent)' }}>{results.suggestedScore}/5</div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="action-bar">
+          {results && (
+            <button className="btn btn-send" onClick={sendToAssessment}>
+              {sendStatus || 'Send to Assessment'}
+            </button>
+          )}
+          <button className="btn btn-secondary" onClick={regenerate}>New trials</button>
+        </div>
+
+        <div className="footer">
+          Companion to the Clinical Attention Assessment.<br/>
+          Interviewability gating probe — determines whether further attentional testing will yield valid data.<br/>
+          Draft tool — not validated. Based on Albertella et al., <em>Psychiatr Clin N Am</em> (2026).
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(FingerCounting));
+</script>
+</body>
+</html>

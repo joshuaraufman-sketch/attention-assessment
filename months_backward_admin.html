@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Months/Days Backward — Administration Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body style="margin:0;padding:0">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useEffect, useRef, useMemo } = React;
+
+const IS_CHILD_MODE = (() => {
+  try { return new URLSearchParams(window.location.search).get('parent') === 'true'; } catch { return false; }
+})();
+
+const MONTHS_BACKWARD = ['December', 'November', 'October', 'September', 'August', 'July', 'June', 'May', 'April', 'March', 'February', 'January'];
+const DAYS_BACKWARD = ['Saturday', 'Friday', 'Thursday', 'Wednesday', 'Tuesday', 'Monday', 'Sunday'];
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root {
+    --c-bg: #faf9f7; --c-surface: #ffffff; --c-text: #1a1a1a;
+    --c-text-secondary: #5a5a5a; --c-text-muted: #8a8a8a;
+    --c-border: #e0ddd8; --c-border-light: #eeedea;
+    --c-accent: #2c5f4a; --c-accent-light: #e8f0ec; --c-accent-hover: #1e4535;
+    --c-warn: #c0392b; --c-warn-bg: #fdf0ef;
+    --c-pass: #27ae60; --c-fail: #c0392b;
+    --c-pass-bg: #e8f5ed; --c-fail-bg: #fdf0ef;
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --radius: 8px; --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--c-bg); }
+
+  .app { font-family: var(--font-body); color: var(--c-text); min-height: 100vh; padding: 24px 16px 80px; max-width: 920px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid var(--c-accent); }
+  .header h1 { font-family: var(--font-display); font-size: 1.85rem; font-weight: 700; color: var(--c-accent); }
+  .header .subtitle { font-size: 0.85rem; color: var(--c-text-muted); margin-top: 6px; }
+
+  .card { background: var(--c-surface); border-radius: var(--radius); border: 1px solid var(--c-border-light); box-shadow: var(--shadow-sm); margin-bottom: 20px; overflow: hidden; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--c-border-light); background: var(--c-accent-light); }
+  .card-header h2 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--c-accent); }
+  .card-body { padding: 18px 20px; }
+
+  .instructions { font-size: 0.85rem; line-height: 1.6; color: var(--c-text-secondary); }
+  .instructions ul { margin: 8px 0 8px 20px; }
+  .instructions li { margin-bottom: 4px; }
+  .instructions strong { color: var(--c-text); }
+
+  .script { margin-top: 12px; padding: 12px 16px; background: #f8f7f5; border-left: 3px solid var(--c-accent); border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.85rem; line-height: 1.55; }
+  .script .script-label { font-size: 0.7rem; font-weight: 700; color: var(--c-accent); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+
+  .mode-tabs { display: flex; gap: 0; margin-bottom: 16px; border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+  .mode-tab { flex: 1; padding: 10px; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; background: var(--c-surface); border: none; color: var(--c-text-muted); cursor: pointer; text-align: center; border-right: 1px solid var(--c-border); }
+  .mode-tab:last-child { border-right: none; }
+  .mode-tab.active { background: var(--c-accent); color: white; }
+
+  /* ─── Timer ─── */
+  .timer-area { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 14px 18px; background: var(--c-bg); border-radius: var(--radius); border: 1px solid var(--c-border); }
+  .timer-display { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; color: var(--c-accent); min-width: 80px; }
+  .timer-btn { font-family: var(--font-body); font-size: 0.82rem; font-weight: 600; padding: 7px 16px; border-radius: 6px; border: 1px solid var(--c-accent); background: var(--c-surface); color: var(--c-accent); cursor: pointer; transition: all 0.15s; }
+  .timer-btn:hover { background: var(--c-accent); color: white; }
+  .timer-btn.active { background: var(--c-accent); color: white; }
+  .timer-norm { font-size: 0.78rem; color: var(--c-text-muted); margin-left: auto; }
+
+  /* ─── Sequence scoring ─── */
+  .seq-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--c-border-light); }
+  .seq-item:last-child { border-bottom: none; }
+  .seq-expected { font-family: var(--font-body); font-size: 0.92rem; font-weight: 600; color: var(--c-text); min-width: 100px; }
+  .seq-status-btns { display: flex; gap: 4px; }
+  .seq-btn { font-family: var(--font-body); font-size: 0.68rem; font-weight: 600; padding: 5px 10px; border-radius: 4px; border: 1.5px solid var(--c-border); background: var(--c-surface); color: var(--c-text-muted); cursor: pointer; transition: all 0.12s; }
+  .seq-btn:hover { border-color: var(--c-accent); color: var(--c-accent); }
+  .seq-btn.correct { background: var(--c-pass); border-color: var(--c-pass); color: white; }
+  .seq-btn.skip { background: #e67e22; border-color: #e67e22; color: white; }
+  .seq-btn.persev { background: #8e44ad; border-color: #8e44ad; color: white; }
+  .seq-btn.derail { background: var(--c-fail); border-color: var(--c-fail); color: white; }
+  .seq-btn.self-correct { background: #2980b9; border-color: #2980b9; color: white; }
+
+  /* ─── Results ─── */
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .result-card { padding: 14px; border-radius: var(--radius); border: 1px solid var(--c-border-light); background: var(--c-bg); text-align: center; }
+  .result-label { font-size: 0.7rem; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .result-value { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; line-height: 1; }
+  .result-sub { font-size: 0.72rem; color: var(--c-text-muted); margin-top: 4px; }
+
+  .btn { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; padding: 9px 18px; border-radius: var(--radius); border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--c-accent); color: white; }
+  .btn-secondary { background: var(--c-surface); color: var(--c-text-secondary); border: 1px solid var(--c-border); }
+  .btn-send { background: #1a6b4a; color: white; border: 2px solid #1a6b4a; }
+  .btn-send:hover { background: #145538; }
+
+  .send-banner { padding: 10px 16px; margin-bottom: 20px; background: #e8f0ec; border: 1px solid #b8d4c4; border-radius: var(--radius); font-size: 0.82rem; color: var(--c-accent); line-height: 1.5; }
+  .action-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .tip { display: flex; gap: 10px; padding: 10px 14px; background: #fff8e6; border-left: 3px solid #e0a040; border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.8rem; line-height: 1.5; color: #7a5a10; margin-top: 12px; }
+  .footer { text-align: center; font-size: 0.72rem; color: var(--c-text-muted); margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--c-border-light); line-height: 1.6; }
+`;
+
+function MonthsBackward() {
+  const [mode, setMode] = useState('months'); // months | days
+  const sequence = mode === 'months' ? MONTHS_BACKWARD : DAYS_BACKWARD;
+  // Each item: null | 'correct' | 'skip' | 'persev' | 'derail' | 'self-correct'
+  const [statuses, setStatuses] = useState({});
+
+  // Timer
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef(null);
+  const [sendStatus, setSendStatus] = useState('');
+
+  const startTimer = useCallback(() => {
+    setTimerRunning(true);
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed(prev => prev + 1), 1000);
+  }, []);
+
+  const stopTimer = useCallback(() => {
+    setTimerRunning(false);
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    stopTimer();
+    setElapsed(0);
+  }, [stopTimer]);
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  const switchMode = useCallback((m) => {
+    setMode(m);
+    setStatuses({});
+    resetTimer();
+  }, [resetTimer]);
+
+  const setItemStatus = useCallback((idx, status) => {
+    setStatuses(prev => {
+      const next = { ...prev };
+      if (next[`${mode}-${idx}`] === status) {
+        delete next[`${mode}-${idx}`];
+      } else {
+        next[`${mode}-${idx}`] = status;
+      }
+      return next;
+    });
+  }, [mode]);
+
+  const formatTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const results = useMemo(() => {
+    const items = sequence.map((_, i) => statuses[`${mode}-${i}`]).filter(Boolean);
+    if (items.length === 0) return null;
+
+    const correct = items.filter(s => s === 'correct').length;
+    const selfCorrects = items.filter(s => s === 'self-correct').length;
+    const skips = items.filter(s => s === 'skip').length;
+    const persevs = items.filter(s => s === 'persev').length;
+    const derails = items.filter(s => s === 'derail').length;
+    const totalErrors = skips + persevs + derails;
+
+    // task_5 anchors:
+    // 1: "Unable to perform"
+    // 2: "Marked difficulty, multiple errors"
+    // 3: "Moderate difficulty"
+    // 4: "Mild difficulty or self-corrects"
+    // 5: "Fluent and accurate"
+    let suggestedScore;
+    if (correct === 0 && selfCorrects === 0) {
+      suggestedScore = 1;
+    } else if (totalErrors >= 3 || derails > 0) {
+      suggestedScore = 2;
+    } else if (totalErrors >= 2) {
+      suggestedScore = 3;
+    } else if (totalErrors >= 1 || selfCorrects > 0 || (mode === 'months' && elapsed > 30)) {
+      suggestedScore = 4;
+    } else {
+      suggestedScore = 5;
+    }
+
+    return { correct, selfCorrects, skips, persevs, derails, totalErrors, suggestedScore, elapsed, mode };
+  }, [statuses, sequence, mode, elapsed]);
+
+  const sendToAssessment = useCallback(() => {
+    if (!results) return;
+    const payload = {
+      tool: 'months_backward', version: 1, results,
+      suggestedScores: { task_5: results.suggestedScore },
+    };
+    let sent = false;
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'bedside-tool-result', payload }, '*');
+        sent = true;
+      }
+    } catch (e) {}
+    if (sent) {
+      setSendStatus('Sent');
+    } else {
+      try { navigator.clipboard.writeText(JSON.stringify(payload)); } catch {
+        const ta = document.createElement('textarea');
+        ta.value = JSON.stringify(payload); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      setSendStatus('Copied — paste in Assessment');
+    }
+    setTimeout(() => setSendStatus(''), 3000);
+  }, [results]);
+
+  const resetAll = useCallback(() => {
+    setStatuses({});
+    resetTimer();
+  }, [resetTimer]);
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <div className="header">
+          <h1>Months / Days Backward</h1>
+          <div className="subtitle">Overlearned sequence reversal with timing and error classification</div>
+        </div>
+
+        {IS_CHILD_MODE && (
+          <div className="send-banner">
+            Opened from Clinical Attention Assessment. When finished, use <strong>"Send to Assessment"</strong> to transfer results back.
+          </div>
+        )}
+
+        <div className="card">
+          <div className="card-header"><h2>Administration</h2></div>
+          <div className="card-body">
+            <div className="instructions">
+              <ul>
+                <li>Ask the patient to recite the sequence backward. Start the timer when they begin.</li>
+                <li>Mark each item as it's produced. Error types:</li>
+                <li><strong style={{ color: 'var(--c-pass)' }}>Correct</strong> — said the right item in order.</li>
+                <li><strong style={{ color: '#e67e22' }}>Skip</strong> — omitted an item and jumped ahead.</li>
+                <li><strong style={{ color: '#8e44ad' }}>Perseveration</strong> — repeated an item already said.</li>
+                <li><strong style={{ color: 'var(--c-fail)' }}>Derailment</strong> — switched to forward order or produced random items.</li>
+                <li><strong style={{ color: '#2980b9' }}>Self-corrected</strong> — made an error but caught and fixed it (counts as intact performance).</li>
+              </ul>
+            </div>
+            <div className="script">
+              <div className="script-label">Script — months</div>
+              "Please say the months of the year backward, starting from December."
+              <br/><br/>
+              <em>If the patient cannot do months, switch to days (easier):</em>
+              <br/><br/>
+              <div className="script-label" style={{ marginTop: 8 }}>Script — days (fallback)</div>
+              "Please say the days of the week backward, starting from Saturday."
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header"><h2>Scoring</h2></div>
+          <div className="card-body">
+            <div className="mode-tabs">
+              <button className={`mode-tab ${mode === 'months' ? 'active' : ''}`} onClick={() => switchMode('months')}>Months backward</button>
+              <button className={`mode-tab ${mode === 'days' ? 'active' : ''}`} onClick={() => switchMode('days')}>Days backward</button>
+            </div>
+
+            <div className="timer-area">
+              <div className="timer-display">{formatTime(elapsed)}</div>
+              {!timerRunning ? (
+                <button className="timer-btn" onClick={startTimer}>{elapsed > 0 ? 'Resume' : 'Start'}</button>
+              ) : (
+                <button className="timer-btn active" onClick={stopTimer}>Stop</button>
+              )}
+              <button className="timer-btn" onClick={resetTimer} style={{ fontSize: '0.78rem', padding: '5px 12px' }}>Reset</button>
+              <div className="timer-norm">
+                {mode === 'months' ? 'Normal: < 30 seconds' : 'Normal: < 15 seconds'}
+              </div>
+            </div>
+
+            {sequence.map((item, idx) => {
+              const key = `${mode}-${idx}`;
+              const status = statuses[key];
+              return (
+                <div className="seq-item" key={key}>
+                  <div className="seq-expected">{item}</div>
+                  <div className="seq-status-btns">
+                    <button className={`seq-btn ${status === 'correct' ? 'correct' : ''}`} onClick={() => setItemStatus(idx, 'correct')}>✓</button>
+                    <button className={`seq-btn ${status === 'skip' ? 'skip' : ''}`} onClick={() => setItemStatus(idx, 'skip')}>Skip</button>
+                    <button className={`seq-btn ${status === 'persev' ? 'persev' : ''}`} onClick={() => setItemStatus(idx, 'persev')}>Persev</button>
+                    <button className={`seq-btn ${status === 'derail' ? 'derail' : ''}`} onClick={() => setItemStatus(idx, 'derail')}>Derail</button>
+                    <button className={`seq-btn ${status === 'self-correct' ? 'self-correct' : ''}`} onClick={() => setItemStatus(idx, 'self-correct')}>Self-corr</button>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="tip">
+              💡 Days backward is significantly easier than months (7 items vs 12, higher overlearning). If the patient fails months but passes days, the finding is milder — it suggests the attentional control demand exceeded capacity at 12 items but not at 7. If they fail both, attentional impairment is more definitive.
+            </div>
+          </div>
+        </div>
+
+        {results && (
+          <div className="card">
+            <div className="card-header"><h2>Results</h2></div>
+            <div className="card-body">
+              <div className="results-grid">
+                <div className="result-card">
+                  <div className="result-label">Correct</div>
+                  <div className="result-value" style={{ color: 'var(--c-pass)' }}>{results.correct}</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Self-corrected</div>
+                  <div className="result-value" style={{ color: '#2980b9' }}>{results.selfCorrects}</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Skips</div>
+                  <div className="result-value" style={{ color: results.skips > 0 ? '#e67e22' : 'var(--c-pass)' }}>{results.skips}</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Perseverations</div>
+                  <div className="result-value" style={{ color: results.persevs > 0 ? '#8e44ad' : 'var(--c-pass)' }}>{results.persevs}</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Derailments</div>
+                  <div className="result-value" style={{ color: results.derails > 0 ? 'var(--c-fail)' : 'var(--c-pass)' }}>{results.derails}</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Time</div>
+                  <div className="result-value" style={{ color: 'var(--c-accent)' }}>{formatTime(results.elapsed)}</div>
+                  <div className="result-sub">{mode === 'months' ? (elapsed <= 30 ? 'Within normal' : 'Slow') : (elapsed <= 15 ? 'Within normal' : 'Slow')}</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Suggested</div>
+                  <div className="result-value" style={{ color: 'var(--c-accent)' }}>{results.suggestedScore}/5</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="action-bar">
+          {results && (
+            <button className="btn btn-send" onClick={sendToAssessment}>
+              {sendStatus || 'Send to Assessment'}
+            </button>
+          )}
+          <button className="btn btn-secondary" onClick={resetAll}>Reset</button>
+        </div>
+
+        <div className="footer">
+          Companion to the Clinical Attention Assessment.<br/>
+          Error types: skip (omission), perseveration (repetition), derailment (forward switch / random).<br/>
+          Draft tool — not validated. Based on Albertella et al., <em>Psychiatr Clin N Am</em> (2026).
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(MonthsBackward));
+</script>
+</body>
+</html>

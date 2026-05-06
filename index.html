@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clinical Attention Assessment</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body style="margin:0;padding:0">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useEffect, useRef } = React;
+
+const SECTIONS = [
+  {
+    id: "observation",
+    title: "Behavioral Observation",
+    subtitle: "General attentiveness during interview",
+    instructions: "Rate the following based on direct observation during the clinical encounter. These items do not require formal testing.",
+    items: [
+      { id: "obs_1", text: "Patient awareness of purpose of examination and current situation", anchors: ["Unaware of purpose/situation", "Vaguely aware", "Partially oriented to situation", "Mostly aware", "Fully oriented to situation and purpose"] },
+      { id: "obs_2", text: "Conversational coherence — ability to maintain logical thread without rambling or contradiction", anchors: ["Incoherent / frequent contradictions", "Frequent tangentiality", "Occasional drift from topic", "Mostly coherent", "Fully coherent and goal-directed"] },
+      { id: "obs_3", text: "Sustained engagement — maintains attention throughout interview without external redirection", anchors: ["Cannot sustain beyond seconds", "Frequent disengagement", "Intermittent lapses", "Mostly sustained", "Fully sustained throughout"] },
+      { id: "obs_4", text: "Psychomotor presentation (hypoactivity, hyperactivity, tremor, myoclonus, or other movement abnormalities)", anchors: ["Marked abnormality", "Moderate abnormality", "Mild abnormality", "Questionable finding", "No abnormality observed"] },
+      { id: "obs_5", text: 'Subjective report — does the patient describe their thinking as "foggy/cloudy" vs "sharp/clear"?', anchors: ["Reports marked fogginess", "Reports moderate fogginess", "Reports mild fogginess", "Reports mostly clear", "Reports sharp and clear"] },
+      { id: "obs_6", text: "Facial expression and apparent perplexity (wide-eyed, bewildered appearance)", anchors: ["Markedly perplexed", "Moderately perplexed", "Mildly perplexed", "Questionable", "Alert and appropriate"] },
+    ],
+  },
+  {
+    id: "orientation",
+    title: "Orientation",
+    subtitle: "Temporal, spatial, situational, and personal",
+    instructions: "Prevent patient from consulting watches, calendars, phones, or asking others. Normal ranges: within 4 hours of current time, 3 days of date, 2 days of day-of-week, and correct month/year.",
+    items: [
+      { id: "ori_1", text: "Temporal — day of week, date, month, year, season, and approximate current time", anchors: ["Disoriented to most elements", "Knows month/year only", "Knows month/year + day of week", "Off by ≤3 days on date", "Fully oriented within normal limits"] },
+      { id: "ori_2", text: "Functional time sense — awareness of passage of time (distinct from knowing the calendar date)", anchors: ["No sense of time passage", "Markedly impaired", "Moderately impaired", "Mildly impaired", "Intact functional time sense"] },
+      { id: "ori_3", text: "Place — type of facility, name of facility, city/neighborhood, state", anchors: ["Disoriented to type of place", "Knows type but not name/location", "Knows type and name, not locale", "Minor error (e.g., wrong floor/ward)", "Fully oriented to place"] },
+      { id: "ori_4", text: "Directional/spatial — can describe location of home relative to clinic, direction of travel, estimated travel time", anchors: ["Cannot describe any spatial relations", "Markedly impaired", "Moderately impaired", "Mildly impaired", "Intact spatial/directional orientation"] },
+      { id: "ori_5", text: "Situational — reason for visit, current clinical context", anchors: ["No awareness of reason for visit", "Vague/incorrect understanding", "Partial understanding", "Mostly accurate", "Fully aware of situation and reason"] },
+      { id: "ori_6", text: "Personal (autopsychic) — name, age, biographical details", anchors: ["Cannot provide personal details", "Markedly impaired", "Moderately impaired", "Minor inaccuracies", "Fully oriented to self"] },
+    ],
+  },
+  {
+    id: "temporal",
+    title: "Temporal Pattern",
+    subtitle: "Course, context sensitivity, and cross-context pattern",
+    instructions: "Establish the temporal profile of attentional complaints before proceeding to formal testing. This section is required before interpretation — it determines whether findings should be read as state or trait.",
+    items: [
+      {
+        id: "temp_1", text: "Course of attentional difficulty", isQualitative: true,
+        anchors: ["Lifelong, stable", "Lifelong, variable", "Episodic (days–weeks)", "Progressive", "Acute onset"],
+        administration: "Ask: \"Have you always had trouble with focus, or is this new?\" \"Did teachers or parents comment on your attention as a child?\" \"When did you first notice this was a problem?\" \"Does it come and go, or is it constant?\" Lifelong-stable strongly supports ADHD. Lifelong-variable suggests ADHD with mood/anxiety modulation. Episodic points to mood episodes, substance cycles, or stress-reactive patterns. Progressive raises neurocognitive decline. Acute onset (days) demands delirium workup.",
+      },
+      {
+        id: "temp_2", text: "Context sensitivity — how much does the attentional difficulty vary with state factors?", isQualitative: true,
+        anchors: ["Stable across contexts", "Varies with stress", "Varies with sleep", "Varies with mood", "Highly state-dependent"],
+        administration: "Probe: \"Is your concentration about the same regardless of how you're feeling, or does it change a lot depending on your stress/sleep/mood?\" Stable-across-contexts supports a trait deficit (ADHD, neurocognitive). High state-dependence suggests the attentional problem is secondary to a modifiable driver.",
+      },
+      {
+        id: "temp_3", text: "Cross-context pattern — does the attentional difficulty manifest across settings or is it context-specific?", isQualitative: true,
+        anchors: ["Isolated to one context", "Primarily one setting, mild in others", "Two settings affected", "Most settings affected", "Pervasive across all contexts"],
+        administration: "Ask about attention/concentration at work, at home, in social settings, and during leisure activities. ADHD-pattern dysfunction typically shows friction across multiple settings. Context-specific dysfunction suggests the attentional difficulty may be driven by the emotional/motivational characteristics of that setting. Also probe for interest-based variation: \"Are there things you can focus on easily?\" The ability to hyperfocus on novel/rewarding tasks while being completely blocked by routine/low-reward tasks is characteristic of ADHD.",
+      },
+    ],
+  },
+  {
+    id: "attentional_tasks",
+    title: "Structured Attentional Tasks",
+    subtitle: "Serial recitation, continuous performance, and spatial tasks",
+    instructions: 'Administer 3–4 different types of attentional tasks and mentally "factor analyze" the common denominator. These are supplementary to clinical observation, not a replacement. Maintain a non-threatening atmosphere.',
+    items: [
+      { id: "task_1", text: "Digit Span Forward — serial recitation (normal ≥ 5 digits)", administration: "Read a sequence of random digits aloud at a rate of one per second (avoid rhythmic grouping). Start with 3 digits. After each correct repetition, increase by one digit. Give two trials at each length. Record the longest span correctly repeated on at least one of two trials.", anchors: ["≤2 digits", "3 digits", "4 digits", "5 digits", "≥6 digits"] },
+      { id: "task_2", text: "Digit Span Backward — working memory component (normal ≥ 3 digits)", administration: "Read a sequence of random digits aloud at one per second. Ask the patient to repeat them in reverse order. Demonstrate with a 2-digit example first. Start with 2 digits. A forward-backward discrepancy of >2 digits suggests a working memory deficit beyond simple attentional impairment.", anchors: ["Unable to perform", "2 digits", "3 digits", "4 digits", "≥5 digits"] },
+      { id: "task_3", text: 'Continuous Performance — "A" vigilance task or similar (sustained attention over ≥2 minutes)', administration: "Read aloud a series of random letters at one per second for at least 2 minutes. Instruct the patient to tap the table each time they hear the target letter. ~10% target frequency. Record omission errors, commission errors, and whether performance degrades over time.", anchors: ["Unable to engage with task", "Multiple omissions and commissions", "Several errors, declining with time", "Few errors, stable performance", "Accurate and consistent throughout"] },
+      { id: "task_4", text: "Serial 7s or Serial 3s — sustained calculation (assess for both accuracy and consistency)", administration: "Ask the patient to subtract 7 from 100 and keep subtracting. Record both accuracy and consistency — a patient who makes one early arithmetic error but continues subtracting correctly from their wrong answer shows intact attention with a calculation error (different from attentional failure).", anchors: ["Unable to begin", "≤2 correct before stopping", "3–4 correct with errors", "Mostly correct, occasional error", "Accurate and fluent"] },
+      { id: "task_5", text: "Months/days backward — overlearned sequence reversal", administration: "Ask the patient to recite months backward from December. Time the response — healthy adults complete in under 30 seconds. Note whether errors are skips, perseverations, or complete derailment. Self-corrections count as intact performance.", anchors: ["Unable to perform", "Marked difficulty, multiple errors", "Moderate difficulty", "Mild difficulty or self-corrects", "Fluent and accurate"] },
+      { id: "task_6", text: "Interviewability probe — ability to count raised fingers on examiner's hands", administration: "Hold up both hands and display a random number of raised fingers (vary between trials). If the patient fails this, more complex attentional tasks are unlikely to yield valid results. Use 3–5 trials.", anchors: ["Unable to perform", "Frequent errors", "Occasional errors", "Accurate but slow", "Accurate and prompt"] },
+    ],
+  },
+  {
+    id: "attentional_dynamics",
+    title: "Attentional Dynamics",
+    subtitle: "Tenacity, vigilance, variability, phenomenology, and affective coupling",
+    instructions: "Assess based on the full encounter. Tenacity = concentration/fixation on a target. Vigilance (descriptive psychopathology sense) = mobility/shifting of attention.",
+    items: [
+      { id: "dyn_1", text: "Tenacity — ability to sustain focused concentration on a single target or topic", anchors: ["Hypotenacity — cannot fix attention", "Reduced tenacity", "Normal tenacity", "Mildly increased tenacity", "Hypertenacity — rigidly fixated"] },
+      { id: "dyn_2", text: "Vigilance (mobility) — ability to appropriately shift attention to new relevant stimuli", anchors: ["Hypovigilance — fails to shift", "Reduced shifting", "Normal mobility", "Increased shifting", "Hypervigilance — shifts to every stimulus"] },
+      // Revision 2: Expanded variability
+      { id: "var_1", text: "Within-session variability — moment-to-moment fluctuation in performance during this encounter", anchors: ["None", "Mild", "Moderate", "Marked", "Extreme"] },
+      { id: "var_2", text: "Day-to-day variability — patient-reported fluctuation across days (by history)", anchors: ["None", "Mild", "Moderate", "Marked", "Extreme"], isQualitative: true, administration: "Ask: \"Do you have good days and bad days for concentration, or is it about the same every day?\" \"How different are your best days from your worst days?\"" },
+      { id: "var_3", text: "Sleep sensitivity — how much does sleep quality/quantity affect attentional performance?", anchors: ["None", "Mild", "Moderate", "Marked", "Extreme"], isQualitative: true, administration: "Ask: \"How much does a bad night's sleep affect your concentration the next day?\" Compare with contextual sleep data." },
+      { id: "var_4", text: "Stress sensitivity — how much does acute stress affect attentional performance?", anchors: ["None", "Mild", "Moderate", "Marked", "Extreme"], isQualitative: true, administration: "Ask: \"When you're under stress, does your concentration get worse? How much worse?\"" },
+      // Revision 8: Merged attentional capture (replaces dyn_4 + dyn_5)
+      {
+        id: "dyn_capture", text: "Source of attentional capture — when attention fails, what captures it?", isQualitative: true,
+        anchors: ["External stimuli", "Internal thoughts", "Emotional states", "Task avoidance", "Mixed / unclear"],
+        administration: "Ask: \"When you lose focus, where does your mind go?\" Distinguish between: External stimuli = environmental distractions pull attention (classic distractibility). Internal thoughts = obsessions, rumination, worry, or delusional content consume attention (attentional depolarization). Emotional states = affect itself disrupts processing. Task avoidance = attention diverts from aversive tasks to anything else. This replaces the prior distractibility vs. distraction and depolarization items with a cleaner mechanistic construct.",
+      },
+      // Revision 3: Upgraded phenomenology (7 anchors)
+      {
+        id: "dyn_phenom", text: "Subjective attentional experience — what is the qualitative 'texture' of the attentional difficulty?", isQualitative: true,
+        anchors: ["Foggy / slowed", "Scattered / externally pulled", "Crowded (too many thoughts)", "Racing (accelerated, pressured)", "Blank / disengaged", "Overcontrolled / perfectionistic", "No difficulty"],
+        administration: "Ask: \"When your concentration is at its worst, what does it feel like inside your head?\" Key patterns: Foggy/slowed → delirium, depression, medication effects, fatigue. Scattered/pulled → ADHD, anxiety, hyperactive delirium. Crowded → OCD, GAD, PTSD, psychosis-spectrum. Racing → mania/hypomania, stimulant effects, severe anxiety. Blank/disengaged → depression, dissociation, apathy syndromes. Overcontrolled → perfectionism, social anxiety, OCPD.",
+      },
+      // Revision 4: Affective coupling
+      {
+        id: "dyn_affect", text: "Affective coupling — when attention fails, what is the dominant affective state?", isQualitative: true,
+        anchors: ["Depressed / low energy", "Anxious / worried", "Irritable / tense", "Agitated / driven", "Neutral / no mood shift"],
+        administration: "Ask: \"When you can't concentrate, how do you feel emotionally? Low? Anxious? Irritable? Or is your mood not really part of it?\" This is critical for: mixed states (where irritability + inattention can mimic ADHD), anxiety vs. ADHD (anxious inattention has a different treatment path), and depression vs. fatigue (mood coloring of attentional failure has diagnostic value).",
+      },
+      {
+        id: "dyn_8", text: "Hot executive function — capacity for self-regulation in emotionally or motivationally charged contexts",
+        anchors: ["Severe dysregulation under emotional load", "Frequent impulsive/reward-driven failures", "Occasional lapses in emotionally charged contexts", "Mild difficulty, generally compensates", "Intact regulation across contexts"],
+        administration: "Probe with questions about real-world decision-making: \"Do you find it harder to think clearly when you're upset or excited?\" A patient who passes all structured tasks but reports severe real-world self-regulation failures may have selective hot EF impairment with preserved cool EF.",
+      },
+      {
+        id: "dyn_9", text: "Metacognitive accuracy — does the patient's self-assessment of their attentional/cognitive abilities match observed performance?", isQualitative: true,
+        anchors: ["Marked overconfidence (reports intact, performs poorly)", "Mild overconfidence", "Accurate self-assessment", "Mild underconfidence (catastrophizes deficits)", "Marked underconfidence (reports severe impairment, performs normally)"],
+        administration: "Compare the patient's subjective report with actual performance. Overconfidence is associated with compulsive phenotypes and anosognosia. Underconfidence is common in depression and anxiety.",
+      },
+      { id: "dyn_6", text: "Attentional bias — attention captured by disorder-specific stimuli (e.g., substance cues, threat cues, somatic sensations)", anchors: ["Marked bias observed", "Moderate bias", "Mild bias", "Questionable", "No bias observed"] },
+    ],
+  },
+  {
+    id: "context",
+    title: "Contextual Modifiers",
+    subtitle: "Factors affecting attentional performance",
+    instructions: "Document factors that may be contributing to attentional findings. These inform interpretation rather than scoring.",
+    items: [
+      { id: "ctx_1", text: "Sleep status — hours of sleep in past 24h and recent sleep pattern", anchors: ["Severe deprivation (<2h)", "Moderate deprivation (2–4h)", "Mild deprivation (4–6h)", "Adequate (6–7h)", "Well-rested (≥7h)"] },
+      { id: "ctx_2", text: "Acute stress level at time of assessment", anchors: ["Severe acute stress", "Moderate stress", "Mild stress", "Minimal stress", "Calm/relaxed"] },
+      { id: "ctx_3", text: "Medication effects — current psychotropic or other medications with known attentional impact", anchors: ["Likely significant impact", "Probable moderate impact", "Possible mild impact", "Unlikely impact", "No relevant medications"] },
+      { id: "ctx_4", text: "Substance use — recent use of substances with attentional effects", anchors: ["Active intoxication/withdrawal", "Recent use (<24h)", "Recent use (24–72h)", "Remote use", "No recent use"] },
+      { id: "ctx_5", text: "Time on task — was attentional performance stable or declining as the assessment progressed?", anchors: ["Rapid early decline", "Progressive decline", "Mild late decline", "Stable throughout", "Improved with engagement"] },
+      // Revision 5: Triggering factors
+      {
+        id: "ctx_triggers", text: "Triggering factors — what precipitates or worsens attentional episodes?", isQualitative: true,
+        anchors: ["None identifiable", "Sleep deprivation", "Stress", "Conflict / interpersonal", "Medication / substance", "Mood episode"],
+        administration: "Ask: \"Can you identify anything that makes your concentration worse? Does it follow bad sleep, stressful events, arguments, medication changes, or mood shifts?\" This tightens causal inference: identifiable triggers suggest state-dependent attentional impairment with a modifiable driver, while no identifiable triggers are more consistent with a trait deficit.",
+      },
+    ],
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────
+// Section index helpers (since order changed)
+// ──────────────────────────────────────────────────────────────────
+const SEC_IDX = {};
+SECTIONS.forEach((s, i) => SEC_IDX[s.id] = i);
+
+function getSeverityColor(score) {
+  if (score === null) return "var(--c-border)";
+  if (score <= 1) return "#c0392b";
+  if (score <= 2) return "#e67e22";
+  if (score <= 3) return "#f1c40f";
+  if (score <= 4) return "#27ae60";
+  return "#2980b9";
+}
+
+function getSeverityLabel(score) {
+  if (score === null) return "—";
+  if (score <= 1) return "Severe";
+  if (score <= 2) return "Moderate";
+  if (score <= 3) return "Mild";
+  if (score <= 4) return "Normal";
+  return "Intact";
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Bedside tool integration
+// ──────────────────────────────────────────────────────────────────
+
+const TOOL_MAP = {
+  task_1: { file: 'digit_span_admin.html', label: 'Digit Span Tool' },
+  task_2: { file: 'digit_span_admin.html', label: 'Digit Span Tool' },
+  task_3: { file: 'cpt_admin.html', label: 'CPT Tool' },
+  task_4: { file: 'serial_subtraction_admin.html', label: 'Serial Subtraction Tool' },
+  task_5: { file: 'months_backward_admin.html', label: 'Months Backward Tool' },
+  task_6: { file: 'finger_counting_admin.html', label: 'Finger Counting Tool' },
+};
+
+const getToolForItem = (itemId) => TOOL_MAP[itemId] || null;
+
+const TOOL_LABELS = {
+  digit_span: 'Digit Span', cpt: 'CPT', serial_subtraction: 'Serial Subtraction',
+  months_backward: 'Months Backward', finger_counting: 'Finger Counting',
+};
+
+// Domains that contribute to the (demoted) composite — excludes context and temporal
+const SCORED_DOMAINS = ['observation', 'orientation', 'attentional_tasks', 'attentional_dynamics'];
+
+// ──────────────────────────────────────────────────────────────────
+// Diagnostic Pathway Engine
+// ──────────────────────────────────────────────────────────────────
+
+function evaluatePathways(scores, sectionAvgs) {
+  const s = (id) => scores[id];
+  const obsAvg = sectionAvgs.observation;
+  const oriAvg = sectionAvgs.orientation;
+  const taskAvg = sectionAvgs.attentional_tasks;
+
+  // Computed features
+  const lowVar = (s("var_1") != null && s("var_1") <= 2) && (s("var_2") == null || s("var_2") <= 2);
+  const highVar = (s("var_1") != null && s("var_1") >= 3) || (s("var_2") != null && s("var_2") >= 3);
+  const crossContext = s("temp_3") != null && s("temp_3") >= 4;
+  const contextDependent = s("temp_2") != null && s("temp_2") >= 4;
+  const stablePattern = s("temp_1") != null && s("temp_1") <= 2;
+  const externalCapture = s("dyn_capture") === 1;
+  const internalCapture = s("dyn_capture") === 2;
+  const emotionalCapture = s("dyn_capture") === 3;
+  const taskAvoidance = s("dyn_capture") === 4;
+  const weakAffect = s("dyn_affect") === 5;
+  const strongAffect = s("dyn_affect") != null && s("dyn_affect") <= 4;
+  const affectType = s("dyn_affect");
+  const foggySlowed = s("dyn_phenom") === 1;
+  const scattered = s("dyn_phenom") === 2;
+  const crowded = s("dyn_phenom") === 3;
+  const racing = s("dyn_phenom") === 4;
+  const blank = s("dyn_phenom") === 5;
+  const lowTenacity = s("dyn_1") != null && s("dyn_1") <= 2;
+  const lowVigilance = s("dyn_2") != null && s("dyn_2") <= 2;
+  const reducedTenacity = s("dyn_1") != null && s("dyn_1") <= 2;
+  const timeOnTaskDecline = s("ctx_5") != null && s("ctx_5") <= 2;
+  const perplexity = s("obs_6") != null && s("obs_6") <= 2;
+  const disorientation = oriAvg !== null && oriAvg <= 2;
+  const preservedTasks = taskAvg !== null && taskAvg >= 4;
+  const lowEnergy = affectType === 1;
+
+  // ── Pathway F: Delirium (hard stop) ──
+  const pathF = {
+    id: 'F', label: 'Delirium / Global Impairment',
+    met: 0, total: 3, criteria: [],
+  };
+  if (lowTenacity && lowVigilance) { pathF.met++; pathF.criteria.push('Low tenacity + low vigilance'); }
+  if (disorientation) { pathF.met++; pathF.criteria.push('Disorientation'); }
+  if (perplexity) { pathF.met++; pathF.criteria.push('Perplexity'); }
+
+  if (pathF.met >= 2) {
+    return {
+      primary: pathF,
+      isUrgent: true,
+      interpretation: "Pattern consistent with disturbance of consciousness (delirium until proven otherwise). The combination of global attentional collapse with disorientation and/or perplexity has high specificity for an organic confusional state.",
+      nextSteps: ["Immediate medical workup: metabolic panel, CBC, UA, vitals, O2 sat", "Formal delirium screening (CAM, DRS-R-98)", "Medication review — especially anticholinergic burden", "Assess for fluctuating course (hallmark of delirium)", "Do NOT attribute to psychiatric diagnosis without ruling out delirium first"],
+      implication: "All other diagnostic considerations are deferred until delirium is excluded.",
+      conflicts: [],
+      modifiers: pathF.criteria,
+    };
+  }
+
+  // ── Score all non-urgent pathways ──
+  const pathways = [];
+
+  // Pathway A: Trait ADHD-consistent
+  const pathA = { id: 'A', label: 'Stable trait attentional inefficiency (ADHD-consistent)', met: 0, total: 5, criteria: [] };
+  if (stablePattern) { pathA.met++; pathA.criteria.push('Stable/lifelong pattern'); }
+  if (lowVar) { pathA.met++; pathA.criteria.push('Low variability'); }
+  if (crossContext) { pathA.met++; pathA.criteria.push('Cross-context impairment'); }
+  if (externalCapture || taskAvoidance) { pathA.met++; pathA.criteria.push(externalCapture ? 'External distractibility' : 'Task avoidance'); }
+  if (weakAffect) { pathA.met++; pathA.criteria.push('Weak affective coupling'); }
+  pathways.push(pathA);
+
+  // Pathway B: State-dependent (non-ADHD)
+  const pathB = { id: 'B', label: 'State-dependent attentional impairment', met: 0, total: 4, criteria: [] };
+  if (highVar) { pathB.met++; pathB.criteria.push('High variability'); }
+  if (contextDependent) { pathB.met++; pathB.criteria.push('Strong context dependence'); }
+  if (timeOnTaskDecline) { pathB.met++; pathB.criteria.push('Time-on-task decline'); }
+  if (s("var_3") != null && s("var_3") >= 3 || s("var_4") != null && s("var_4") >= 3) { pathB.met++; pathB.criteria.push('High sleep/stress sensitivity'); }
+  pathways.push(pathB);
+
+  // Pathway C: Affective-driven
+  const pathC = { id: 'C', label: 'Affective-driven attentional instability', met: 0, total: 3, criteria: [] };
+  if (strongAffect) { pathC.met++; pathC.criteria.push('Strong affective coupling'); }
+  if (affectType === 2 || affectType === 3 || affectType === 4) { pathC.met++; pathC.criteria.push('Irritability/anxiety/agitation present'); }
+  if (highVar || internalCapture || emotionalCapture) { pathC.met++; pathC.criteria.push(highVar ? 'High variability' : emotionalCapture ? 'Emotional capture' : 'Internal capture'); }
+  pathways.push(pathC);
+
+  // Pathway D: Internal preoccupation
+  const pathD = { id: 'D', label: 'Internal preoccupation pattern', met: 0, total: 3, criteria: [] };
+  if (internalCapture) { pathD.met++; pathD.criteria.push('Internal capture dominant'); }
+  if (crowded || s("dyn_phenom") === 6) { pathD.met++; pathD.criteria.push('Crowded/overcontrolled phenomenology'); }
+  if (preservedTasks) { pathD.met++; pathD.criteria.push('Preserved task performance'); }
+  pathways.push(pathD);
+
+  // Pathway E: Cognitive slowing / fatigue
+  const pathE = { id: 'E', label: 'Cognitive slowing / fatigue pattern', met: 0, total: 4, criteria: [] };
+  if (foggySlowed || blank) { pathE.met++; pathE.criteria.push(foggySlowed ? 'Foggy/slowed phenomenology' : 'Blank/disengaged phenomenology'); }
+  if (lowEnergy) { pathE.met++; pathE.criteria.push('Low energy affect'); }
+  if (reducedTenacity) { pathE.met++; pathE.criteria.push('Reduced tenacity'); }
+  if (lowVar) { pathE.met++; pathE.criteria.push('Low variability'); }
+  pathways.push(pathE);
+
+  // Sort by proportion of criteria met (descending)
+  pathways.sort((a, b) => (b.met / b.total) - (a.met / a.total));
+
+  const primary = pathways[0];
+  const runner = pathways[1];
+  const hasEnoughData = primary.met >= 1;
+
+  if (!hasEnoughData) return null;
+
+  // ── Build interpretation ──
+  const interpretations = {
+    A: "Pattern most consistent with trait attentional inefficiency (ADHD phenotype). The combination of lifelong course, stable presentation, cross-context impairment, and weak affective coupling argues against a state-driven explanation.",
+    B: "Pattern most consistent with state-dependent attentional impairment. High variability, context dependence, and/or time-on-task decline indicate a modifiable driver rather than a fixed deficit. ADHD diagnosis should be deferred.",
+    C: "Attentional disturbance appears secondary to affective dysregulation. The strong coupling between mood state and attentional failure suggests treating the affective driver first and reassessing attention after stabilization.",
+    D: "Apparent inattention reflects internal attentional capture, not a primary attentional deficit. Attentional capacity is intact but redirected toward internal content (obsessions, rumination, worry, delusional material).",
+    E: "Pattern consistent with global cognitive slowing. The foggy/slowed quality with low energy and reduced tenacity suggests a systemic process (depression, medical, medication, sleep deprivation) rather than a selective attentional deficit.",
+  };
+
+  const nextStepsMap = {
+    A: ["Confirm childhood onset with collateral if possible", "Confirm cross-setting impairment (work, home, social)", "Assess functional consequences and adaptive strategies", "Consider stimulant or non-stimulant trial"],
+    B: ["Identify primary driver: sleep, stress, medical, or medication", "Do NOT diagnose ADHD at this time", "Address modifiable state factors first", "Reassess attentional profile after stabilization"],
+    C: [],
+    D: ["Assess for OCD (intrusive, ego-dystonic content)", "Screen for ruminative depression or GAD", "Evaluate for trauma-related intrusions (PTSD)", "Consider psychosis spectrum if content is bizarre or ego-syntonic", "Target the absorbing content, not the attention system"],
+    E: ["Screen for depression (PHQ-9, clinical interview)", "Review sleep hygiene and sleep disorders", "Medical workup: thyroid, B12, metabolic panel", "Medication review — sedating agents, anticholinergics"],
+  };
+
+  // Pathway C sub-branching based on affect type
+  if (primary.id === 'C') {
+    const subBranches = {
+      1: { consider: "Depression spectrum", steps: ["Treat depression first", "Attentional complaints often resolve with effective antidepressant treatment", "Reassess attention after mood stabilization"] },
+      2: { consider: "Anxiety spectrum", steps: ["Treat anxiety first — anxiolytic or SSRI", "Differentiate from ADHD: anxious inattention has distress about failure; ADHD-pattern has frustration", "Reassess attention after anxiety management"] },
+      3: { consider: "Mixed depressive state / dysphoric mood episode", steps: ["Evaluate for mixed features (DSM-5 specifier)", "Mood stabilizer may be indicated before stimulant consideration", "Irritability + inattention mimics ADHD — do not diagnose without longitudinal data"] },
+      4: { consider: "Bipolar spectrum / activation syndrome", steps: ["Assess for mania/hypomania history", "Check sleep patterns — decreased need is a red flag", "Stimulants are contraindicated if bipolar is suspected", "Mood stabilizer first"] },
+    };
+    const branch = subBranches[affectType] || { consider: "Affective disorder (type unclear)", steps: ["Characterize the affective state more precisely", "Treat mood/anxiety before attributing to ADHD"] };
+    nextStepsMap.C = branch.steps;
+    interpretations.C += ` Sub-pattern most consistent with: ${branch.consider}.`;
+  }
+
+  // ── Conflict detection ──
+  const conflicts = [];
+
+  // ADHD + high variability
+  if (primary.id === 'A' && highVar) {
+    conflicts.push({
+      label: "ADHD + High Variability",
+      text: "ADHD diagnosis is uncertain due to elevated attentional variability, which is atypical for a purely trait-based disorder. High variability suggests a state-dependent component that should be evaluated before attributing to ADHD.",
+    });
+  }
+
+  // Good tasks + poor real-world (observation)
+  if (preservedTasks && obsAvg !== null && obsAvg <= 2.5) {
+    conflicts.push({
+      label: "Task–Function Discrepancy",
+      text: "Structured task performance exceeds real-world functioning (observation). Consider: hot EF impairment (intact cool EF, impaired under emotional load), affective interference in naturalistic contexts, or environmental/contextual drivers that structured testing doesn't capture.",
+    });
+  }
+
+  // Poor tasks + intact observation
+  if (taskAvg !== null && taskAvg <= 2.5 && obsAvg !== null && obsAvg >= 3.5) {
+    conflicts.push({
+      label: "Testing Artifact Possible",
+      text: "Formal testing may underestimate true function. The patient performs worse on structured tasks than in natural conversation. Consider: test anxiety, effort/motivation issues, the 'experimental condition' effect, or specific cognitive deficits (working memory, processing speed) that structured tasks expose.",
+    });
+  }
+
+  // Affective + ADHD competition
+  if (primary.id === 'A' && runner && runner.id === 'C' && runner.met >= 2) {
+    conflicts.push({
+      label: "ADHD vs. Affective Overlap",
+      text: "Both ADHD-pattern and affective-driven patterns have significant support. The presence of strong affective coupling argues against a pure ADHD interpretation. Consider: comorbid ADHD + mood disorder, or affective disorder mimicking ADHD. Longitudinal assessment after mood stabilization is recommended before diagnosing ADHD.",
+    });
+  }
+
+  // ── Build modifiers list ──
+  const modifiers = [];
+  if (highVar) modifiers.push("Marked variability");
+  if (strongAffect) modifiers.push("Strong affective coupling");
+  if (internalCapture) modifiers.push("Internal attentional capture");
+  if (externalCapture) modifiers.push("External distractibility");
+  if (emotionalCapture) modifiers.push("Emotional capture");
+  if (taskAvoidance) modifiers.push("Task avoidance pattern");
+  if (timeOnTaskDecline) modifiers.push("Time-on-task decline");
+  if (contextDependent) modifiers.push("State-dependent");
+  const phenom = s("dyn_phenom");
+  const phenomLabels = { 1: "Foggy/slowed", 2: "Scattered", 3: "Crowded", 4: "Racing", 5: "Blank/disengaged", 6: "Overcontrolled" };
+  if (phenom && phenomLabels[phenom]) modifiers.push(phenomLabels[phenom] + " phenomenology");
+
+  // ADHD implication
+  let implication = "";
+  if (primary.id === 'A' && conflicts.length === 0) {
+    implication = "Findings are consistent with ADHD. Proceed with confirmatory evaluation.";
+  } else if (primary.id === 'A' && conflicts.length > 0) {
+    implication = "ADHD is possible but conflicts exist. Address the flagged issues before diagnosing.";
+  } else if (primary.id !== 'A') {
+    implication = "ADHD diagnosis should be deferred pending resolution of the identified attentional driver.";
+  }
+
+  return {
+    primary,
+    runner: runner && runner.met >= 1 ? runner : null,
+    isUrgent: false,
+    interpretation: interpretations[primary.id],
+    nextSteps: nextStepsMap[primary.id],
+    implication,
+    conflicts,
+    modifiers,
+    allPathways: pathways,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────
+// CSS
+// ──────────────────────────────────────────────────────────────────
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --c-bg: #faf9f7; --c-surface: #ffffff; --c-text: #1a1a1a;
+    --c-text-secondary: #5a5a5a; --c-text-muted: #8a8a8a;
+    --c-border: #e0ddd8; --c-border-light: #eeedea;
+    --c-accent: #2c5f4a; --c-accent-light: #e8f0ec; --c-accent-hover: #1e4535;
+    --c-warn: #c0392b; --c-warn-bg: #fdf0ef;
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .app { font-family: var(--font-body); color: var(--c-text); background: var(--c-bg); min-height: 100vh; padding: 24px 16px 80px; max-width: 820px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid var(--c-accent); }
+  .header h1 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 700; color: var(--c-accent); line-height: 1.2; margin-bottom: 4px; }
+  .header .subtitle { font-size: 0.85rem; color: var(--c-text-muted); margin-top: 6px; }
+  .header .draft-badge { display: inline-block; background: var(--c-warn-bg); color: var(--c-warn); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 100px; margin-top: 10px; }
+
+  .patient-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .patient-bar input { flex: 1; min-width: 140px; font-family: var(--font-body); font-size: 0.85rem; padding: 8px 12px; border: 1px solid var(--c-border); border-radius: var(--radius); background: var(--c-surface); color: var(--c-text); outline: none; transition: border-color 0.2s; }
+  .patient-bar input:focus { border-color: var(--c-accent); }
+
+  .section { margin-bottom: 28px; background: var(--c-surface); border-radius: var(--radius); border: 1px solid var(--c-border-light); box-shadow: var(--shadow-sm); overflow: hidden; }
+  .section-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--c-border-light); cursor: pointer; user-select: none; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .section-header:hover { background: var(--c-accent-light); }
+  .section-header h2 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; color: var(--c-accent); line-height: 1.3; }
+  .section-header .section-sub { font-size: 0.78rem; color: var(--c-text-muted); margin-top: 2px; }
+  .section-header .section-score { font-size: 0.8rem; font-weight: 600; white-space: nowrap; padding: 4px 10px; border-radius: 100px; color: white; flex-shrink: 0; margin-top: 2px; }
+  .section-header .chevron { font-size: 1.1rem; color: var(--c-text-muted); flex-shrink: 0; transition: transform 0.2s; margin-top: 4px; }
+  .section-header .chevron.open { transform: rotate(180deg); }
+
+  .section-instructions { padding: 12px 20px; background: var(--c-accent-light); font-size: 0.8rem; color: var(--c-accent); line-height: 1.5; border-bottom: 1px solid var(--c-border-light); }
+  .section-body { padding: 8px 0; }
+
+  .item { padding: 14px 20px; border-bottom: 1px solid var(--c-border-light); }
+  .item:last-child { border-bottom: none; }
+  .item-text { font-size: 0.85rem; color: var(--c-text); line-height: 1.5; margin-bottom: 10px; }
+  .item-text-row { display: flex; align-items: flex-start; gap: 8px; justify-content: space-between; }
+
+  .admin-details { margin-bottom: 10px; }
+  .admin-summary { font-size: 0.75rem; font-weight: 600; color: var(--c-accent); cursor: pointer; padding: 4px 0; user-select: none; list-style: none; }
+  .admin-summary::-webkit-details-marker { display: none; }
+  .admin-summary::before { content: "▸ "; font-size: 0.7rem; }
+  details[open] > .admin-summary::before { content: "▾ "; }
+  .admin-body { font-size: 0.78rem; color: var(--c-text-secondary); line-height: 1.6; padding: 8px 12px; margin-top: 4px; background: #f8f7f5; border-left: 3px solid var(--c-accent); border-radius: 0 var(--radius) var(--radius) 0; }
+
+  .rating-row { display: flex; gap: 6px; align-items: stretch; flex-wrap: wrap; }
+  .rating-btn { flex: 1; min-width: 60px; padding: 6px 4px; font-family: var(--font-body); font-size: 0.68rem; line-height: 1.3; border: 1.5px solid var(--c-border); border-radius: 6px; background: var(--c-surface); color: var(--c-text-secondary); cursor: pointer; text-align: center; transition: all 0.15s; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+  .rating-btn:hover { border-color: var(--c-accent); background: var(--c-accent-light); }
+  .rating-btn.selected { border-color: var(--c-accent); background: var(--c-accent); color: white; font-weight: 600; }
+  .rating-btn .score-num { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 2px; }
+  .rating-btn.auto-selected { box-shadow: 0 0 0 2px var(--c-accent-light); }
+
+  .auto-badge { font-size: 0.68rem; font-weight: 600; color: var(--c-accent); background: var(--c-accent-light); padding: 2px 8px; border-radius: 100px; white-space: nowrap; flex-shrink: 0; cursor: help; margin-top: 2px; }
+  .item-auto { background: #f8fcf9; }
+
+  /* ─── Tool bar ─── */
+  .tool-bar { padding: 8px 20px; background: #f0f4f8; border-bottom: 1px solid var(--c-border-light); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tool-bar-label { font-size: 0.75rem; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .tool-launch-btn { font-family: var(--font-body); font-size: 0.75rem; font-weight: 600; padding: 4px 12px; border-radius: 100px; border: 1.5px solid var(--c-accent); background: var(--c-surface); color: var(--c-accent); cursor: pointer; transition: all 0.15s; }
+  .tool-launch-btn:hover { background: var(--c-accent); color: white; }
+  .tool-bar-divider { color: var(--c-border); font-size: 0.8rem; }
+  .tool-paste-btn { font-family: var(--font-body); font-size: 0.72rem; font-weight: 500; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--c-border); background: var(--c-surface); color: var(--c-text-muted); cursor: pointer; transition: all 0.15s; }
+  .tool-paste-btn:hover { border-color: var(--c-accent); color: var(--c-accent); }
+
+  /* ─── Summary ─── */
+  .summary-section { margin-top: 32px; background: var(--c-surface); border-radius: var(--radius); border: 1px solid var(--c-border-light); box-shadow: var(--shadow-md); overflow: hidden; }
+  .summary-header { padding: 16px 20px; background: var(--c-accent); color: white; }
+  .summary-header h2 { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; }
+  .summary-body { padding: 20px; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .summary-card { padding: 14px; border-radius: var(--radius); border: 1px solid var(--c-border-light); text-align: center; }
+  .summary-card .card-label { font-size: 0.72rem; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .summary-card .card-score { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; }
+  .summary-card .card-severity { font-size: 0.75rem; font-weight: 600; margin-top: 2px; }
+
+  .narrative-profile { padding: 16px 20px; background: var(--c-accent-light); border-radius: var(--radius); margin-bottom: 20px; border: 2px solid var(--c-accent); }
+  .narrative-profile .profile-label { font-size: 0.72rem; font-weight: 700; color: var(--c-accent); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .narrative-profile .profile-text { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--c-text); line-height: 1.5; }
+
+  /* ─── Structured diagnostic output ─── */
+  .dx-output { border: 2px solid var(--c-accent); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+  .dx-output.urgent { border-color: var(--c-warn); }
+  .dx-output-header { padding: 14px 20px; background: var(--c-accent); color: white; }
+  .dx-output.urgent .dx-output-header { background: var(--c-warn); }
+  .dx-output-header h3 { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; }
+  .dx-output-body { padding: 18px 20px; }
+
+  .dx-section { margin-bottom: 16px; }
+  .dx-section:last-child { margin-bottom: 0; }
+  .dx-section-label { font-size: 0.7rem; font-weight: 700; color: var(--c-accent); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .dx-output.urgent .dx-section-label { color: var(--c-warn); }
+
+  .dx-primary { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--c-text); line-height: 1.4; }
+  .dx-interpretation { font-size: 0.85rem; color: var(--c-text); line-height: 1.6; }
+  .dx-modifiers { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dx-modifier { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 100px; background: var(--c-accent-light); color: var(--c-accent); }
+  .dx-implication { font-size: 0.85rem; font-weight: 600; color: var(--c-accent); line-height: 1.5; padding: 10px 14px; background: var(--c-accent-light); border-radius: var(--radius); }
+  .dx-steps { font-size: 0.82rem; color: var(--c-text-secondary); line-height: 1.6; }
+  .dx-steps li { margin-bottom: 3px; }
+
+  .dx-conflict { margin-top: 12px; padding: 12px 16px; background: #fff8e6; border: 1px solid #f0e0b0; border-radius: var(--radius); }
+  .dx-conflict-title { font-size: 0.78rem; font-weight: 700; color: #7a5a10; margin-bottom: 4px; }
+  .dx-conflict-text { font-size: 0.78rem; color: #7a5a10; line-height: 1.5; }
+
+  .dx-runner { margin-top: 12px; padding: 10px 14px; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius); font-size: 0.78rem; color: var(--c-text-secondary); }
+  .dx-runner strong { color: var(--c-text); }
+
+  .dx-pathway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 12px; }
+  .dx-pw-card { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--c-border-light); text-align: center; font-size: 0.72rem; }
+  .dx-pw-card .pw-label { font-weight: 600; color: var(--c-text); margin-bottom: 2px; }
+  .dx-pw-card .pw-score { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+  .dx-pw-card.best { border-color: var(--c-accent); background: var(--c-accent-light); }
+
+  .detail-toggle { font-family: var(--font-body); font-size: 0.78rem; font-weight: 600; color: var(--c-accent); background: none; border: none; cursor: pointer; padding: 8px 0; margin-top: 12px; }
+  .detail-toggle:hover { text-decoration: underline; }
+
+  .composite-footnote { font-size: 0.72rem; color: var(--c-text-muted); text-align: center; margin-top: 8px; font-style: italic; }
+
+  /* ─── Interpretation panels ─── */
+  .interp-panel { margin-top: 16px; border-radius: var(--radius); border: 1px solid var(--c-border); overflow: hidden; }
+  .interp-header { padding: 10px 16px; background: #f0f4f8; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; border-bottom: 1px solid var(--c-border-light); }
+  .interp-icon { font-size: 1rem; flex-shrink: 0; }
+  .interp-body { padding: 14px 16px; font-size: 0.82rem; line-height: 1.65; color: var(--c-text); }
+  .interp-body p { margin-bottom: 10px; }
+  .interp-body p:last-child { margin-bottom: 0; }
+  .interp-body strong { color: var(--c-text); }
+  .interp-caveat { font-size: 0.75rem; color: var(--c-text-muted); font-style: italic; padding-top: 8px; border-top: 1px solid var(--c-border-light); margin-top: 12px; }
+
+  .interp-discrepancy { border-color: #f0e0b0; }
+  .interp-discrepancy .interp-header { background: #fff8e6; border-bottom-color: #f0e0b0; }
+  .interp-orientation { border-color: #e8b4ae; }
+  .interp-orientation .interp-header { background: #fdf0ef; border-bottom-color: #e8b4ae; }
+  .interp-variability { border-color: #b8d4c4; }
+  .interp-variability .interp-header { background: #e8f0ec; border-bottom-color: #b8d4c4; }
+
+  .interp-tv { border-width: 2px; }
+  .interp-tv-danger { border-color: #c0392b; }
+  .interp-tv-danger .interp-header { background: var(--c-warn-bg); border-bottom-color: #e8b4ae; }
+  .interp-tv-warn { border-color: #e67e22; }
+  .interp-tv-warn .interp-header { background: #fef5e7; border-bottom-color: #f0d0a0; }
+  .interp-tv-info { border-color: #2980b9; }
+  .interp-tv-info .interp-header { background: #eaf2fa; border-bottom-color: #b0d0e8; }
+
+  .interp-phenomenology { border-color: #d4c8e8; }
+  .interp-phenomenology .interp-header { background: #f5f0fa; border-bottom-color: #d4c8e8; }
+  .interp-hotef { border-color: #f0d0a0; }
+  .interp-hotef .interp-header { background: #fef5e7; border-bottom-color: #f0d0a0; }
+  .interp-metacog { border-color: #b8d0e4; }
+  .interp-metacog .interp-header { background: #e8f0f8; border-bottom-color: #b8d0e4; }
+  .interp-affect { border-color: #e0b8d4; }
+  .interp-affect .interp-header { background: #faf0f5; border-bottom-color: #e0b8d4; }
+  .interp-capture { border-color: #d0d0e8; }
+  .interp-capture .interp-header { background: #f0f0fa; border-bottom-color: #d0d0e8; }
+
+  .delirium-flag { margin-top: 16px; padding: 14px 18px; background: var(--c-warn-bg); border: 1px solid #e8b4ae; border-radius: var(--radius); font-size: 0.82rem; color: var(--c-warn); line-height: 1.5; }
+  .delirium-flag strong { display: block; margin-bottom: 4px; }
+
+  /* ─── Pattern classification gate (Rev 7) ─── */
+  .gate-section { margin-top: 24px; padding: 20px; background: #f8f7f5; border: 2px solid var(--c-accent); border-radius: var(--radius); }
+  .gate-title { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--c-accent); margin-bottom: 4px; }
+  .gate-hint { font-size: 0.78rem; color: var(--c-text-muted); margin-bottom: 12px; }
+  .gate-required { font-size: 0.72rem; font-weight: 600; color: var(--c-warn); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* ─── Formulation ─── */
+  .formulation-section { margin-top: 24px; padding-top: 20px; border-top: 2px solid var(--c-accent); }
+  .formulation-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: var(--c-accent); margin-bottom: 16px; }
+
+  .form-field { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--c-text); margin-bottom: 4px; }
+  .form-hint { display: block; font-weight: 400; font-size: 0.75rem; color: var(--c-text-muted); margin-top: 2px; margin-bottom: 8px; }
+  .form-options { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .form-chip { font-family: var(--font-body); font-size: 0.75rem; padding: 5px 12px; border: 1.5px solid var(--c-border); border-radius: 100px; background: var(--c-surface); color: var(--c-text-secondary); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .form-chip:hover { border-color: var(--c-accent); color: var(--c-accent); }
+  .form-chip-active { border-color: var(--c-accent); background: var(--c-accent); color: white; font-weight: 600; }
+  .form-textarea { width: 100%; min-height: 72px; font-family: var(--font-body); font-size: 0.82rem; padding: 10px 12px; border: 1px solid var(--c-border); border-radius: var(--radius); background: var(--c-surface); color: var(--c-text); resize: vertical; outline: none; line-height: 1.5; }
+  .form-textarea:focus { border-color: var(--c-accent); }
+  .form-textarea-sm { width: 100%; min-height: 52px; font-family: var(--font-body); font-size: 0.82rem; padding: 8px 12px; border: 1px solid var(--c-border); border-radius: var(--radius); background: var(--c-surface); color: var(--c-text); resize: vertical; outline: none; line-height: 1.5; margin-top: 4px; }
+  .form-textarea-sm:focus { border-color: var(--c-accent); }
+
+  .action-bar { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  .btn { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; padding: 10px 20px; border-radius: var(--radius); border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--c-accent); color: white; }
+  .btn-primary:hover { background: var(--c-accent-hover); }
+  .btn-secondary { background: var(--c-surface); color: var(--c-text-secondary); border: 1px solid var(--c-border); }
+  .btn-secondary:hover { border-color: var(--c-accent); color: var(--c-accent); }
+
+  .citation { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--c-border-light); font-size: 0.72rem; color: var(--c-text-muted); line-height: 1.5; }
+
+  .formulation-locked { padding: 16px 20px; background: #fff8e6; border: 1px solid #f0e0b0; border-radius: var(--radius); font-size: 0.82rem; color: #7a5a10; line-height: 1.5; margin-bottom: 16px; }
+`;
+
+// ──────────────────────────────────────────────────────────────────
+// Component
+// ──────────────────────────────────────────────────────────────────
+
+function AttentionAssessment() {
+  const [scores, setScores] = useState({});
+  const [openSections, setOpenSections] = useState({ observation: true });
+  const [patientInfo, setPatientInfo] = useState({ name: "", date: "", mrn: "" });
+  const [formulation, setFormulation] = useState({
+    patternClass: "",
+    attribution: "",
+    stateVsTrait: "",
+    biasTargets: "",
+    confounders: "",
+    plan: "",
+    additionalNotes: "",
+  });
+  const [autoScores, setAutoScores] = useState({});
+  const [pasteStatus, setPasteStatus] = useState("");
+  const openWindowsRef = useRef({});
+  const [copyStatus, setCopyStatus] = useState("");
+
+  // ── postMessage listener ──
+  useEffect(() => {
+    const handler = (event) => {
+      try {
+        const msg = event.data;
+        if (!msg || msg.type !== 'bedside-tool-result' || !msg.payload) return;
+        const { tool, suggestedScores } = msg.payload;
+        if (!suggestedScores || typeof suggestedScores !== 'object') return;
+        setScores(prev => {
+          const next = { ...prev };
+          Object.entries(suggestedScores).forEach(([itemId, value]) => {
+            if (typeof value === 'number' && value >= 1 && value <= 5) next[itemId] = value;
+          });
+          return next;
+        });
+        setAutoScores(prev => {
+          const next = { ...prev };
+          const now = new Date().toLocaleTimeString();
+          Object.keys(suggestedScores).forEach(itemId => { next[itemId] = { tool: tool || 'unknown', timestamp: now }; });
+          return next;
+        });
+        setOpenSections(prev => ({ ...prev, attentional_tasks: true }));
+      } catch (e) {}
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  const openTool = useCallback((file) => {
+    const base = window.location.href.replace(/[^/]*$/, '');
+    const w = window.open(base + file + '?parent=true', file, 'width=960,height=800');
+    if (w) openWindowsRef.current[file] = w;
+  }, []);
+
+  const pasteResults = useCallback(async () => {
+    let text = '';
+    try { text = await navigator.clipboard.readText(); } catch {
+      setPasteStatus('Cannot read clipboard'); setTimeout(() => setPasteStatus(''), 3000); return;
+    }
+    try {
+      const payload = JSON.parse(text);
+      if (!payload.tool || !payload.suggestedScores) { setPasteStatus('Not a valid tool result'); setTimeout(() => setPasteStatus(''), 3000); return; }
+      setScores(prev => {
+        const next = { ...prev };
+        Object.entries(payload.suggestedScores).forEach(([id, v]) => { if (typeof v === 'number' && v >= 1 && v <= 5) next[id] = v; });
+        return next;
+      });
+      setAutoScores(prev => {
+        const next = { ...prev };
+        const now = new Date().toLocaleTimeString();
+        Object.keys(payload.suggestedScores).forEach(id => { next[id] = { tool: payload.tool, timestamp: now }; });
+        return next;
+      });
+      setOpenSections(prev => ({ ...prev, attentional_tasks: true }));
+      setPasteStatus('Applied'); setTimeout(() => setPasteStatus(''), 2500);
+    } catch { setPasteStatus('Invalid JSON'); setTimeout(() => setPasteStatus(''), 3000); }
+  }, []);
+
+  const updateFormulation = useCallback((field, value) => { setFormulation(prev => ({ ...prev, [field]: value })); }, []);
+  const setScore = useCallback((itemId, value) => { setScores(prev => ({ ...prev, [itemId]: prev[itemId] === value ? null : value })); }, []);
+  const toggleSection = useCallback((sectionId) => { setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] })); }, []);
+
+  const getSectionAvg = (section) => {
+    const rated = section.items.filter(i => !i.isQualitative).map(i => scores[i.id]).filter(v => v != null);
+    if (rated.length === 0) return null;
+    return rated.reduce((a, b) => a + b, 0) / rated.length;
+  };
+
+  const getSectionCompletion = (section) => {
+    const total = section.items.length;
+    const done = section.items.filter(i => scores[i.id] != null).length;
+    return `${done}/${total}`;
+  };
+
+  const checkDeliriumTriad = () => {
+    const obsAvg = getSectionAvg(SECTIONS[SEC_IDX.observation]);
+    const oriAvg = getSectionAvg(SECTIONS[SEC_IDX.orientation]);
+    const perplexity = scores["obs_6"];
+    if (obsAvg !== null && oriAvg !== null && perplexity !== null) return obsAvg <= 2 && oriAvg <= 2 && perplexity <= 2;
+    return false;
+  };
+
+  const getTenacityVigilancePattern = () => {
+    const t = scores["dyn_1"], v = scores["dyn_2"];
+    if (t == null || v == null) return null;
+    if (t >= 4 && v <= 2) return { label: "Hypertenacity + Hypovigilance", description: "Attention rigidly fixed on specific content while capacity to shift is reduced.", clinicalContext: "Classic pattern in delusional depression and fixed preoccupations. Bleuler's antagonistic tenacity-vigilance relationship.", differentials: "Delusional depression, severe OCD, catatonic states, melancholic rumination, paranoid fixation.", nextSteps: "Assess content of fixation. Evaluate mood congruence. Screen for psychotic features.", severity: "warn" };
+    if (t <= 2 && v >= 4) return { label: "Hypotenacity + Hypervigilance", description: "Cannot sustain focus on any target, shifts rapidly to every stimulus.", clinicalContext: "Characteristic of delirium tremens, acute mania, severe agitation. Norepinephrine overdrive.", differentials: "Substance withdrawal, hyperactive delirium, acute mania, severe anxiety/panic, stimulant intoxication.", nextSteps: "Urgent: rule out delirium (CAM/DRS-R-98). Obtain vitals. Medication reconciliation.", severity: "danger" };
+    if (t <= 2 && v <= 2) return { label: "Hypotenacity + Hypovigilance", description: "Global attentional collapse — neither focus nor shifting is preserved.", clinicalContext: "Most severe form. Strongly associated with hypoactive delirium, often missed.", differentials: "Hypoactive delirium, obtundation, severe depression with psychomotor retardation, advanced dementia.", nextSteps: "High priority: formal delirium screening. Check metabolic panel, CBC, UA, medication levels.", severity: "danger" };
+    if (t >= 4 && v >= 4) return { label: "Hypertenacity + Hypervigilance", description: "Both concentration and shifting appear heightened — apparent hyperprosexia.", clinicalContext: "Controversial concept. May reflect hypomania, stimulant effects, or anxiety-driven hyperarousal.", differentials: "Hypomania, stimulant use, flow states, prodromal mania.", nextSteps: "Monitor for evolution into mania. Assess sleep patterns. Screen for substance use.", severity: "info" };
+    return null;
+  };
+
+  const resetAll = () => {
+    setScores({});
+    setAutoScores({});
+    setFormulation({ patternClass: "", attribution: "", stateVsTrait: "", biasTargets: "", confounders: "", plan: "", additionalNotes: "" });
+  };
+
+  // ── Computed values ──
+  const sectionAvgs = {};
+  SECTIONS.forEach(s => { sectionAvgs[s.id] = getSectionAvg(s); });
+
+  const scoredAvgs = SCORED_DOMAINS.map(id => sectionAvgs[id]).filter(v => v != null);
+  const globalAvg = scoredAvgs.length > 0 ? scoredAvgs.reduce((a, b) => a + b, 0) / scoredAvgs.length : null;
+  const deliriumTriad = checkDeliriumTriad();
+  const tvPattern = getTenacityVigilancePattern();
+
+  // Diagnostic pathway engine
+  const pathwayResult = Object.keys(scores).length >= 5 ? evaluatePathways(scores, sectionAvgs) : null;
+
+  // Check if temporal section is filled (gate for interpretation)
+  const temporalFilled = scores["temp_1"] != null && scores["temp_2"] != null;
+
+  // Detail panels toggle
+  const [showDetails, setShowDetails] = useState(false);
+
+  // ── Chart text ──
+  const generateChartText = useCallback(() => {
+    const lines = [];
+    const hr = "─".repeat(50);
+    lines.push("CLINICAL ATTENTION ASSESSMENT");
+    if (patientInfo.name) lines.push(`Patient: ${patientInfo.name}`);
+    if (patientInfo.date) lines.push(`Date: ${patientInfo.date}`);
+    if (patientInfo.mrn) lines.push(`Examiner: ${patientInfo.mrn}`);
+    lines.push("");
+
+    // Structured pathway output
+    if (pathwayResult) {
+      lines.push(hr);
+      lines.push(pathwayResult.isUrgent ? "⚠ URGENT — ATTENTIONAL PROFILE" : "ATTENTIONAL PROFILE");
+      lines.push(hr);
+      lines.push(`Primary Pattern: ${pathwayResult.primary.label}`);
+      if (pathwayResult.modifiers.length > 0) lines.push(`Modifiers: ${pathwayResult.modifiers.join(", ")}`);
+      lines.push("");
+      lines.push("INTERPRETATION");
+      lines.push(pathwayResult.interpretation);
+      lines.push("");
+      if (pathwayResult.implication) {
+        lines.push("CLINICAL IMPLICATION");
+        lines.push(pathwayResult.implication);
+        lines.push("");
+      }
+      lines.push("NEXT STEPS");
+      pathwayResult.nextSteps.forEach(s => lines.push(`• ${s}`));
+      lines.push("");
+
+      if (pathwayResult.conflicts.length > 0) {
+        lines.push("CONFLICTS / WARNINGS");
+        pathwayResult.conflicts.forEach(c => lines.push(`⚠ ${c.label}: ${c.text}`));
+        lines.push("");
+      }
+    }
+
+    lines.push(hr);
+    lines.push("DOMAIN SCORES");
+    lines.push(hr);
+    SECTIONS.forEach(section => {
+      const avg = getSectionAvg(section);
+      const completion = getSectionCompletion(section);
+      if (avg !== null) lines.push(`${section.title}: ${avg.toFixed(1)}/5 (${getSeverityLabel(avg)}) [${completion}]`);
+      else lines.push(`${section.title}: Not rated [${completion}]`);
+    });
+    if (globalAvg !== null) lines.push(`Composite (reference only): ${globalAvg.toFixed(1)}/5`);
+    lines.push("");
+
+    lines.push(hr);
+    lines.push("ITEM-LEVEL DETAIL");
+    lines.push(hr);
+    SECTIONS.forEach(section => {
+      const ratedItems = section.items.filter(i => scores[i.id] != null);
+      if (ratedItems.length > 0) {
+        lines.push(`\n${section.title.toUpperCase()}`);
+        ratedItems.forEach(item => {
+          const val = scores[item.id];
+          const anchor = item.anchors[val - 1] || "";
+          const shortText = item.text.split("—")[0].trim();
+          const autoTag = autoScores[item.id] ? ` [auto: ${TOOL_LABELS[autoScores[item.id].tool] || autoScores[item.id].tool}]` : "";
+          lines.push(`  ${shortText}: ${val}/${item.anchors.length} (${anchor})${autoTag}`);
+        });
+      }
+    });
+    lines.push("");
+
+    const hasFormulation = formulation.patternClass || formulation.attribution || formulation.plan || formulation.additionalNotes;
+    if (hasFormulation) {
+      lines.push(hr); lines.push("CLINICAL FORMULATION"); lines.push(hr);
+      if (formulation.patternClass) lines.push(`Pattern: ${formulation.patternClass}`);
+      if (formulation.attribution) lines.push(`Attribution: ${formulation.attribution}`);
+      if (formulation.stateVsTrait) lines.push(`State vs. Trait: ${formulation.stateVsTrait}`);
+      if (formulation.confounders) lines.push(`Confounders: ${formulation.confounders}`);
+      if (formulation.plan) lines.push(`Plan: ${formulation.plan}`);
+      if (formulation.additionalNotes) lines.push(`Notes: ${formulation.additionalNotes}`);
+      lines.push("");
+    }
+
+    lines.push(hr);
+    lines.push("Draft tool — not validated. Based on Albertella et al., Psychiatr Clin N Am (2026).");
+    return lines.join("\n");
+  }, [scores, patientInfo, formulation, globalAvg, pathwayResult, autoScores]);
+
+  const copyToClipboard = useCallback(async () => {
+    const text = generateChartText();
+    try { await navigator.clipboard.writeText(text); } catch {
+      const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    setCopyStatus("Copied"); setTimeout(() => setCopyStatus(""), 2000);
+  }, [generateChartText]);
+
+  // ── Render ──
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <div className="header">
+          <h1>Clinical Attention Assessment</h1>
+          <div className="subtitle">Based on Albertella, Lee & Fontenelle — <em>Psychiatr Clin N Am</em> (2026)</div>
+          <div className="draft-badge">Draft — Not Validated</div>
+        </div>
+
+        <div className="patient-bar">
+          <input placeholder="Patient name / ID" value={patientInfo.name} onChange={e => setPatientInfo(p => ({ ...p, name: e.target.value }))} />
+          <input placeholder="Date of assessment" value={patientInfo.date} onChange={e => setPatientInfo(p => ({ ...p, date: e.target.value }))} />
+          <input placeholder="Examiner" value={patientInfo.mrn} onChange={e => setPatientInfo(p => ({ ...p, mrn: e.target.value }))} />
+        </div>
+
+        {SECTIONS.map(section => {
+          const avg = getSectionAvg(section);
+          const isOpen = openSections[section.id];
+          return (
+            <div className="section" key={section.id}>
+              <div className="section-header" onClick={() => toggleSection(section.id)}>
+                <div>
+                  <h2>{section.title}</h2>
+                  <div className="section-sub">{section.subtitle} — {getSectionCompletion(section)} rated</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {avg !== null && <span className="section-score" style={{ background: getSeverityColor(avg) }}>{avg.toFixed(1)} — {getSeverityLabel(avg)}</span>}
+                  <span className={`chevron ${isOpen ? "open" : ""}`}>▼</span>
+                </div>
+              </div>
+              {isOpen && (
+                <>
+                  <div className="section-instructions">{section.instructions}</div>
+                  {section.id === 'attentional_tasks' && (
+                    <div className="tool-bar">
+                      <span className="tool-bar-label">Bedside tools:</span>
+                      <button className="tool-launch-btn" onClick={() => openTool('finger_counting_admin.html')}>Finger Count</button>
+                      <button className="tool-launch-btn" onClick={() => openTool('digit_span_admin.html')}>Digit Span</button>
+                      <button className="tool-launch-btn" onClick={() => openTool('cpt_admin.html')}>CPT</button>
+                      <button className="tool-launch-btn" onClick={() => openTool('serial_subtraction_admin.html')}>Serial Subtraction</button>
+                      <button className="tool-launch-btn" onClick={() => openTool('months_backward_admin.html')}>Months Backward</button>
+                      <span className="tool-bar-divider">|</span>
+                      <button className="tool-paste-btn" onClick={pasteResults}>{pasteStatus || 'Paste results'}</button>
+                    </div>
+                  )}
+                  <div className="section-body">
+                    {section.items.map(item => {
+                      const autoInfo = autoScores[item.id];
+                      return (
+                        <div className={`item ${autoInfo ? 'item-auto' : ''}`} key={item.id}>
+                          <div className="item-text-row">
+                            <div className="item-text">{item.text}</div>
+                            {autoInfo && <span className="auto-badge" title={`Set by ${TOOL_LABELS[autoInfo.tool] || autoInfo.tool} at ${autoInfo.timestamp}. Click any anchor to override.`}>← {TOOL_LABELS[autoInfo.tool] || autoInfo.tool}</span>}
+                          </div>
+                          {item.administration && (
+                            <details className="admin-details">
+                              <summary className="admin-summary">How to administer</summary>
+                              <div className="admin-body">{item.administration}</div>
+                            </details>
+                          )}
+                          <div className="rating-row">
+                            {item.anchors.map((anchor, idx) => {
+                              const val = idx + 1;
+                              const isSelected = scores[item.id] === val;
+                              const isAutoSelected = isSelected && autoInfo;
+                              return (
+                                <button key={idx} className={`rating-btn ${isSelected ? "selected" : ""} ${isAutoSelected ? "auto-selected" : ""}`}
+                                  onClick={() => {
+                                    setScore(item.id, val);
+                                    if (autoInfo && scores[item.id] !== val) setAutoScores(prev => { const n = { ...prev }; delete n[item.id]; return n; });
+                                  }}>
+                                  <div><span className="score-num">{val}</span>{anchor}</div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+
+        {/* ══════════ CLINICAL SUMMARY ══════════ */}
+        <div className="summary-section">
+          <div className="summary-header"><h2>Clinical Summary</h2></div>
+          <div className="summary-body">
+
+            {/* ── Structured Diagnostic Output ── */}
+            {pathwayResult ? (
+              <div className={`dx-output ${pathwayResult.isUrgent ? 'urgent' : ''}`}>
+                <div className="dx-output-header">
+                  <h3>{pathwayResult.isUrgent ? '⚠ URGENT — Attentional Profile' : 'Attentional Profile'}</h3>
+                </div>
+                <div className="dx-output-body">
+                  <div className="dx-section">
+                    <div className="dx-section-label">Primary Pattern</div>
+                    <div className="dx-primary">{pathwayResult.primary.label}</div>
+                  </div>
+
+                  {pathwayResult.modifiers.length > 0 && (
+                    <div className="dx-section">
+                      <div className="dx-section-label">Modifiers</div>
+                      <div className="dx-modifiers">
+                        {pathwayResult.modifiers.map((m, i) => <span className="dx-modifier" key={i}>{m}</span>)}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="dx-section">
+                    <div className="dx-section-label">Interpretation</div>
+                    <div className="dx-interpretation">{pathwayResult.interpretation}</div>
+                  </div>
+
+                  {pathwayResult.implication && (
+                    <div className="dx-section">
+                      <div className="dx-section-label">Clinical Implication</div>
+                      <div className="dx-implication">{pathwayResult.implication}</div>
+                    </div>
+                  )}
+
+                  <div className="dx-section">
+                    <div className="dx-section-label">{pathwayResult.isUrgent ? 'Immediate Next Steps' : 'Diagnostic Pathway — Next Steps'}</div>
+                    <ul className="dx-steps">
+                      {pathwayResult.nextSteps.map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+
+                  {/* Conflicts */}
+                  {pathwayResult.conflicts.map((c, i) => (
+                    <div className="dx-conflict" key={i}>
+                      <div className="dx-conflict-title">⚠ {c.label}</div>
+                      <div className="dx-conflict-text">{c.text}</div>
+                    </div>
+                  ))}
+
+                  {/* Runner-up pathway */}
+                  {pathwayResult.runner && (
+                    <div className="dx-runner">
+                      <strong>Alternative pathway:</strong> {pathwayResult.runner.label} ({pathwayResult.runner.met}/{pathwayResult.runner.total} criteria met: {pathwayResult.runner.criteria.join(", ")})
+                    </div>
+                  )}
+
+                  {/* All pathway scores */}
+                  {!pathwayResult.isUrgent && pathwayResult.allPathways && (
+                    <div className="dx-pathway-grid">
+                      {pathwayResult.allPathways.map(pw => (
+                        <div className={`dx-pw-card ${pw.id === pathwayResult.primary.id ? 'best' : ''}`} key={pw.id}>
+                          <div className="pw-label">{pw.id}</div>
+                          <div className="pw-score" style={{ color: pw.met > 0 ? 'var(--c-accent)' : 'var(--c-text-muted)' }}>{pw.met}/{pw.total}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="narrative-profile" style={{ borderColor: 'var(--c-border)', background: 'var(--c-bg)' }}>
+                <div className="profile-label" style={{ color: 'var(--c-text-muted)' }}>Attentional Profile</div>
+                <div className="profile-text" style={{ color: 'var(--c-text-muted)', fontWeight: 400, fontSize: '0.85rem' }}>
+                  Rate items across sections to generate the diagnostic pathway. The engine evaluates your scores against six clinical pathways and produces a structured interpretation.
+                </div>
+              </div>
+            )}
+
+            {/* Domain scores */}
+            <div className="summary-grid">
+              {SECTIONS.filter(s => SCORED_DOMAINS.includes(s.id)).map(section => {
+                const avg = getSectionAvg(section);
+                return (
+                  <div className="summary-card" key={section.id}>
+                    <div className="card-label">{section.title}</div>
+                    <div className="card-score" style={{ color: getSeverityColor(avg) }}>{avg !== null ? avg.toFixed(1) : "—"}</div>
+                    <div className="card-severity" style={{ color: getSeverityColor(avg) }}>{getSeverityLabel(avg)}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {globalAvg !== null && <div className="composite-footnote">Composite (unweighted reference): {globalAvg.toFixed(1)}/5 — {getSeverityLabel(globalAvg)}. The structured pathway output above is the primary clinical output.</div>}
+
+            {/* Detail panels — collapsed by default */}
+            <button className="detail-toggle" onClick={() => setShowDetails(prev => !prev)}>
+              {showDetails ? '▾ Hide detail panels' : '▸ Show detail panels (tenacity-vigilance, capture, phenomenology, hot EF, metacognition)'}
+            </button>
+
+            {showDetails && (
+              <>
+                {/* Tenacity-vigilance */}
+                {tvPattern && (
+                  <div className={`interp-panel interp-tv interp-tv-${tvPattern.severity}`}>
+                    <div className="interp-header"><span className="interp-icon">🔀</span><strong>Tenacity–Vigilance: {tvPattern.label}</strong></div>
+                    <div className="interp-body">
+                      <p><strong>Pattern:</strong> {tvPattern.description}</p>
+                      <p><strong>Context:</strong> {tvPattern.clinicalContext}</p>
+                      <p><strong>Differentials:</strong> {tvPattern.differentials}</p>
+                      <p><strong>Next steps:</strong> {tvPattern.nextSteps}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Attentional capture */}
+                {scores["dyn_capture"] != null && (
+                  <div className="interp-panel interp-capture">
+                    <div className="interp-header"><span className="interp-icon">🎯</span><strong>Source of Attentional Capture</strong></div>
+                    <div className="interp-body">
+                      {scores["dyn_capture"] === 1 && <p><strong>External stimuli</strong> — classic distractibility. Attention involuntarily captured by environmental inputs.</p>}
+                      {scores["dyn_capture"] === 2 && <p><strong>Internal thoughts</strong> — attentional depolarization. Consumed by obsessions, rumination, worry, or delusional material.</p>}
+                      {scores["dyn_capture"] === 3 && <p><strong>Emotional states</strong> — affect itself disrupts processing. Cognitive system overwhelmed by emotional arousal.</p>}
+                      {scores["dyn_capture"] === 4 && <p><strong>Task avoidance</strong> — selective disengagement from aversive/low-reward tasks. CAN focus, but selectively doesn't.</p>}
+                      {scores["dyn_capture"] === 5 && <p><strong>Mixed/unclear</strong> — source doesn't fall cleanly into one category.</p>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Phenomenology */}
+                {scores["dyn_phenom"] != null && scores["dyn_phenom"] <= 6 && (
+                  <div className="interp-panel interp-phenomenology">
+                    <div className="interp-header"><span className="interp-icon">💭</span><strong>Subjective Attentional Experience</strong></div>
+                    <div className="interp-body">
+                      {scores["dyn_phenom"] === 1 && <p><strong>Foggy / slowed</strong> — cognitive dulling. Associated with delirium, depression, medication effects, fatigue.</p>}
+                      {scores["dyn_phenom"] === 2 && <p><strong>Scattered / externally pulled</strong> — attention fragmented by environment. ADHD, anxiety, hyperactive delirium.</p>}
+                      {scores["dyn_phenom"] === 3 && <p><strong>Crowded</strong> — too many competing thoughts. OCD, GAD, PTSD, psychosis spectrum.</p>}
+                      {scores["dyn_phenom"] === 4 && <p><strong>Racing</strong> — accelerated, pressured thinking. Mania/hypomania, stimulant effects, severe anxiety.</p>}
+                      {scores["dyn_phenom"] === 5 && <p><strong>Blank / disengaged</strong> — empty attentional field. Depression, dissociation, apathy syndromes.</p>}
+                      {scores["dyn_phenom"] === 6 && <p><strong>Overcontrolled</strong> — resources consumed by regulation itself. Social anxiety, OCPD, perfectionism.</p>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Hot EF */}
+                {scores["dyn_8"] != null && scores["dyn_8"] <= 3 && (
+                  <div className="interp-panel interp-hotef">
+                    <div className="interp-header"><span className="interp-icon">🔥</span><strong>Hot Executive Function</strong></div>
+                    <div className="interp-body">
+                      <p>{scores["dyn_8"] <= 1 ? "Severe" : scores["dyn_8"] <= 2 ? "Significant" : "Mild"} difficulty with self-regulation in emotionally charged contexts.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Metacognitive accuracy */}
+                {scores["dyn_9"] != null && scores["dyn_9"] !== 3 && (
+                  <div className="interp-panel interp-metacog">
+                    <div className="interp-header"><span className="interp-icon">🪞</span><strong>Metacognitive {scores["dyn_9"] <= 2 ? "Overconfidence" : "Underconfidence"}</strong></div>
+                    <div className="interp-body">
+                      {scores["dyn_9"] <= 2
+                        ? <p>Self-assessment more positive than observed. Under-uses compensatory strategies.</p>
+                        : <p>Self-reported impairment exceeds objective findings. Common in depression/anxiety.</p>
+                      }
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ══════════ PATTERN CLASSIFICATION (auto-suggested, overridable) ══════════ */}
+            <div className="gate-section">
+              <div className="gate-title">Pattern Classification {pathwayResult ? '(auto-suggested — override if needed)' : '(manual)'}</div>
+              <div className="gate-hint">
+                {pathwayResult
+                  ? `The pathway engine suggests: "${pathwayResult.primary.label}". You can accept this or select a different classification.`
+                  : 'Complete more items to enable the pathway engine, or select manually.'}
+              </div>
+              {!temporalFilled && <div className="gate-required" style={{ marginBottom: 8 }}>Complete the Temporal Pattern section for best results.</div>}
+              <div className="form-options">
+                {[
+                  "Stable trait attentional inefficiency (ADHD-consistent)",
+                  "State-dependent attentional impairment",
+                  "Affective-driven attentional instability",
+                  "Fatigue / cognitive slowing pattern",
+                  "Internal preoccupation pattern",
+                  "Mixed / unclear",
+                ].map(opt => (
+                  <button key={opt}
+                    className={`form-chip ${formulation.patternClass === opt ? "form-chip-active" : ""}`}
+                    onClick={() => updateFormulation("patternClass", formulation.patternClass === opt ? "" : opt)}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ══════════ FORMULATION ══════════ */}
+            {!formulation.patternClass ? (
+              <div className="formulation-locked">
+                Select a pattern classification above to unlock the formulation section.
+              </div>
+            ) : (
+              <div className="formulation-section">
+                <div className="formulation-title">Clinical Formulation</div>
+
+                <div className="form-field">
+                  <label className="form-label">Primary Attribution <span className="form-hint">Given the pattern, what is the most likely source?</span></label>
+                  <div className="form-options">
+                    {["ADHD / neurodevelopmental", "Depressive / mood-related", "Anxiety / OCD-driven", "Delirium / organic", "Substance-related", "Neurocognitive decline", "Comorbid / multifactorial", "Insufficient data"].map(opt => (
+                      <button key={opt} className={`form-chip ${formulation.attribution === opt ? "form-chip-active" : ""}`}
+                        onClick={() => updateFormulation("attribution", formulation.attribution === opt ? "" : opt)}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">State vs. Trait</label>
+                  <div className="form-options">
+                    {["Acute state — likely reversible", "Subacute — unclear trajectory", "Chronic trait — baseline", "Acute exacerbation of chronic trait", "Cannot determine"].map(opt => (
+                      <button key={opt} className={`form-chip ${formulation.stateVsTrait === opt ? "form-chip-active" : ""}`}
+                        onClick={() => updateFormulation("stateVsTrait", formulation.stateVsTrait === opt ? "" : opt)}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">Confounders</label>
+                  <div className="form-options">
+                    {["Sleep deprivation", "Acute stress", "Medication effects", "Substance use", "Pain", "Test anxiety / effort", "Language barrier", "None significant"].map(opt => {
+                      const selected = (formulation.confounders || "").includes(opt);
+                      return (
+                        <button key={opt} className={`form-chip ${selected ? "form-chip-active" : ""}`}
+                          onClick={() => {
+                            const current = formulation.confounders || "";
+                            if (opt === "None significant") { updateFormulation("confounders", selected ? "" : opt); }
+                            else {
+                              const cleaned = current.replace("None significant", "").trim();
+                              const items = cleaned ? cleaned.split(", ").filter(Boolean) : [];
+                              updateFormulation("confounders", selected ? items.filter(i => i !== opt).join(", ") : [...items, opt].join(", "));
+                            }
+                          }}>{opt}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">Plan</label>
+                  <div className="form-options">
+                    {["Formal neuropsych referral", "Delirium workup (CAM, labs, EEG)", "Medication review / anticholinergic audit", "Sleep intervention", "Treat underlying mood/anxiety", "ADHD-specific evaluation", "Longitudinal attentional monitoring", "Collateral history needed", "No further workup indicated"].map(opt => {
+                      const selected = (formulation.plan || "").includes(opt);
+                      return (
+                        <button key={opt} className={`form-chip ${selected ? "form-chip-active" : ""}`}
+                          onClick={() => {
+                            const current = formulation.plan || "";
+                            if (opt === "No further workup indicated") { updateFormulation("plan", selected ? "" : opt); }
+                            else {
+                              const cleaned = current.replace("No further workup indicated", "").trim();
+                              const items = cleaned ? cleaned.split(", ").filter(Boolean) : [];
+                              updateFormulation("plan", selected ? items.filter(i => i !== opt).join(", ") : [...items, opt].join(", "));
+                            }
+                          }}>{opt}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="form-field">
+                  <label className="form-label">Additional Notes</label>
+                  <textarea className="form-textarea" value={formulation.additionalNotes} onChange={e => updateFormulation("additionalNotes", e.target.value)} placeholder="Free text..." />
+                </div>
+              </div>
+            )}
+
+            <div className="action-bar">
+              <button className="btn btn-primary" onClick={copyToClipboard}>{copyStatus || "Copy for Chart"}</button>
+              <button className="btn btn-secondary" onClick={resetAll}>Reset All</button>
+            </div>
+
+            <div className="citation">
+              Derived from: Albertella L, Lee RSC, Fontenelle LF. Attention and Its Symptoms. <em>Psychiatr Clin N Am.</em> 2026.<br/>
+              <strong>Draft clinical tool — not validated. Observation-based assessment should carry more interpretive weight than structured tasks per the source framework.</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AttentionAssessment));
+</script>
+</body>
+</html>

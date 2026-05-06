@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPT — A-Vigilance Administration Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body style="margin:0;padding:0">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useEffect, useRef, useMemo } = React;
+
+// ──────────────────────────────────────────────────────────────────
+// Letter sequence generation
+// ~10% target frequency, 120 letters = ~2 minutes at 1/sec
+// ──────────────────────────────────────────────────────────────────
+
+const LETTERS = 'BCDEFGHIJKLMNOPQRSTUVWXYZ'; // non-target pool (no A)
+
+const generateSequence = (length = 120, targetLetter = 'A', targetRate = 0.10) => {
+  const seq = [];
+  for (let i = 0; i < length; i++) {
+    if (Math.random() < targetRate) {
+      seq.push({ letter: targetLetter, isTarget: true, index: i });
+    } else {
+      const l = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+      seq.push({ letter: l, isTarget: false, index: i });
+    }
+  }
+  // Ensure we have at least some targets in each half
+  const firstHalf = seq.slice(0, Math.floor(length / 2));
+  const secondHalf = seq.slice(Math.floor(length / 2));
+  const fTargets = firstHalf.filter(s => s.isTarget).length;
+  const sTargets = secondHalf.filter(s => s.isTarget).length;
+  // If either half has 0 targets, inject some
+  if (fTargets === 0) {
+    const idx = Math.floor(Math.random() * Math.floor(length / 2));
+    seq[idx] = { letter: targetLetter, isTarget: true, index: idx };
+  }
+  if (sTargets === 0) {
+    const idx = Math.floor(length / 2) + Math.floor(Math.random() * Math.ceil(length / 2));
+    seq[idx] = { letter: targetLetter, isTarget: true, index: idx };
+  }
+  return seq;
+};
+
+// ──────────────────────────────────────────────────────────────────
+// Parent integration
+// ──────────────────────────────────────────────────────────────────
+
+const IS_CHILD_MODE = (() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('parent') === 'true';
+  } catch { return false; }
+})();
+
+const computeSuggestedScore = (results) => {
+  if (!results) return null;
+  const { omissions, commissions, totalTargets, timeDegradation } = results;
+  const totalErrors = omissions + commissions;
+  const errorRate = totalErrors / totalTargets;
+
+  // task_3 anchors:
+  // 1: "Unable to engage with task"
+  // 2: "Multiple omissions and commissions"
+  // 3: "Several errors, declining with time"
+  // 4: "Few errors, stable performance"
+  // 5: "Accurate and consistent throughout"
+
+  if (errorRate > 0.6) return 1;
+  if (totalErrors >= 4 && !timeDegradation) return 2;
+  if (totalErrors >= 3 && timeDegradation) return 3;
+  if (totalErrors >= 2 && timeDegradation) return 3;
+  if (totalErrors >= 1 && totalErrors <= 3) return 4;
+  if (totalErrors === 0) return 5;
+  return 3; // fallback
+};
+
+const buildResultPayload = (results) => {
+  const score = computeSuggestedScore(results);
+  return {
+    tool: 'cpt',
+    version: 1,
+    results,
+    suggestedScores: score ? { task_3: score } : {},
+  };
+};
+
+// ──────────────────────────────────────────────────────────────────
+// Main component
+// ──────────────────────────────────────────────────────────────────
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root {
+    --c-bg: #faf9f7;
+    --c-surface: #ffffff;
+    --c-text: #1a1a1a;
+    --c-text-secondary: #5a5a5a;
+    --c-text-muted: #8a8a8a;
+    --c-border: #e0ddd8;
+    --c-border-light: #eeedea;
+    --c-accent: #2c5f4a;
+    --c-accent-light: #e8f0ec;
+    --c-accent-hover: #1e4535;
+    --c-warn: #c0392b;
+    --c-warn-bg: #fdf0ef;
+    --c-pass: #27ae60;
+    --c-fail: #c0392b;
+    --c-pass-bg: #e8f5ed;
+    --c-fail-bg: #fdf0ef;
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --radius: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--c-bg); }
+
+  .app {
+    font-family: var(--font-body);
+    color: var(--c-text);
+    min-height: 100vh;
+    padding: 24px 16px 80px;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--c-accent);
+  }
+
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    line-height: 1.2;
+  }
+
+  .header .subtitle {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin-top: 6px;
+  }
+
+  .card {
+    background: var(--c-surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--c-border-light);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--c-border-light);
+    background: var(--c-accent-light);
+  }
+
+  .card-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-accent);
+  }
+
+  .card-body { padding: 18px 20px; }
+
+  .instructions {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--c-text-secondary);
+  }
+
+  .instructions ul { margin: 8px 0 8px 20px; padding: 0; }
+  .instructions li { margin-bottom: 4px; }
+  .instructions strong { color: var(--c-text); }
+
+  .script {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: #f8f7f5;
+    border-left: 3px solid var(--c-accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 0.85rem;
+    color: var(--c-text);
+    line-height: 1.55;
+  }
+
+  .script .script-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  /* ─── Config row ─── */
+  .config-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .config-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .config-field label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-secondary);
+  }
+
+  .config-field select, .config-field input[type="number"] {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    padding: 5px 10px;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    background: var(--c-surface);
+    color: var(--c-text);
+  }
+
+  /* ─── Presentation display ─── */
+  .presentation-area {
+    text-align: center;
+    padding: 32px 16px;
+  }
+
+  .current-letter {
+    font-family: var(--font-mono);
+    font-size: 6rem;
+    font-weight: 700;
+    color: var(--c-text);
+    line-height: 1;
+    margin-bottom: 8px;
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .current-letter.target {
+    color: var(--c-accent);
+  }
+
+  .progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background: var(--c-border-light);
+    border-radius: 3px;
+    margin: 12px 0;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--c-accent);
+    border-radius: 3px;
+    transition: width 0.3s;
+  }
+
+  .presentation-info {
+    font-size: 0.8rem;
+    color: var(--c-text-muted);
+    margin-top: 6px;
+  }
+
+  .presentation-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* ─── Scoring during task ─── */
+  .live-score-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .live-score-btn {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: 2px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text-secondary);
+    cursor: pointer;
+    transition: all 0.12s;
+    min-width: 110px;
+  }
+
+  .live-score-btn:hover { border-color: var(--c-accent); color: var(--c-accent); }
+
+  .live-score-btn.omission {
+    border-color: var(--c-fail);
+    color: var(--c-fail);
+  }
+
+  .live-score-btn.commission {
+    border-color: #e67e22;
+    color: #e67e22;
+  }
+
+  /* ─── Letter log ─── */
+  .letter-log {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 12px;
+  }
+
+  .log-letter {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background: var(--c-bg);
+    color: var(--c-text-muted);
+    border: 1px solid transparent;
+  }
+
+  .log-letter.target { background: var(--c-accent-light); color: var(--c-accent); font-weight: 700; }
+  .log-letter.omission { background: var(--c-fail-bg); color: var(--c-fail); border-color: var(--c-fail); }
+  .log-letter.commission { background: #fef5e7; color: #e67e22; border-color: #e67e22; }
+  .log-letter.current { box-shadow: 0 0 0 2px var(--c-accent); }
+  .log-letter.half-marker { border-left: 2px solid var(--c-accent); }
+
+  /* ─── Results ─── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .result-card {
+    padding: 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--c-border-light);
+    background: var(--c-bg);
+    text-align: center;
+  }
+
+  .result-label {
+    font-size: 0.7rem;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .result-value {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    line-height: 1;
+  }
+
+  .result-sub {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+    margin-top: 4px;
+  }
+
+  .result-flag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    display: inline-block;
+  }
+
+  .result-flag.normal { background: var(--c-pass-bg); color: var(--c-pass); }
+  .result-flag.warn { background: var(--c-warn-bg); color: var(--c-warn); }
+  .result-flag.below { background: var(--c-fail-bg); color: var(--c-fail); }
+
+  .degradation-panel {
+    margin-top: 14px;
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+
+  .degradation-panel.warn {
+    background: var(--c-warn-bg);
+    border: 1px solid #e8b4ae;
+    color: var(--c-warn);
+  }
+
+  .degradation-panel.normal {
+    background: var(--c-pass-bg);
+    border: 1px solid #b8d4c4;
+    color: var(--c-pass);
+  }
+
+  .degradation-panel strong { display: block; margin-bottom: 4px; }
+
+  /* ─── Buttons ─── */
+  .btn {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary { background: var(--c-accent); color: white; }
+  .btn-primary:hover { background: var(--c-accent-hover); }
+  .btn-secondary { background: var(--c-surface); color: var(--c-text-secondary); border: 1px solid var(--c-border); }
+  .btn-secondary:hover { border-color: var(--c-accent); color: var(--c-accent); }
+
+  .btn-send {
+    background: #1a6b4a;
+    color: white;
+    border: 2px solid #1a6b4a;
+  }
+  .btn-send:hover { background: #145538; border-color: #145538; }
+
+  .send-banner {
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    background: #e8f0ec;
+    border: 1px solid #b8d4c4;
+    border-radius: var(--radius);
+    font-size: 0.82rem;
+    color: var(--c-accent);
+    line-height: 1.5;
+  }
+
+  .action-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .tip {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fff8e6;
+    border-left: 3px solid #e0a040;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #7a5a10;
+    margin-top: 12px;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--c-border-light);
+    line-height: 1.6;
+  }
+
+  .waiting-msg {
+    font-size: 1rem;
+    color: var(--c-text-muted);
+    font-style: italic;
+  }
+`;
+
+function CPTAdmin() {
+  const [targetLetter, setTargetLetter] = useState('A');
+  const [seqLength, setSeqLength] = useState(120);
+  const [sequence, setSequence] = useState(null);
+  const [phase, setPhase] = useState('setup'); // setup | running | paused | done
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [errors, setErrors] = useState([]); // { index, type: 'omission'|'commission' }
+  const intervalRef = useRef(null);
+  const [sendStatus, setSendStatus] = useState('');
+
+  const startTask = useCallback(() => {
+    const seq = generateSequence(seqLength, targetLetter);
+    setSequence(seq);
+    setErrors([]);
+    setCurrentIndex(0);
+    setPhase('running');
+  }, [seqLength, targetLetter]);
+
+  const stopTask = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setPhase('done');
+  }, []);
+
+  const pauseTask = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setPhase('paused');
+  }, []);
+
+  const resumeTask = useCallback(() => {
+    setPhase('running');
+  }, []);
+
+  // Auto-advance at 1 Hz
+  useEffect(() => {
+    if (phase !== 'running' || !sequence) return;
+    intervalRef.current = setInterval(() => {
+      setCurrentIndex(prev => {
+        if (prev >= sequence.length - 1) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          setPhase('done');
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [phase, sequence]);
+
+  const markError = useCallback((type) => {
+    if (phase !== 'running' && phase !== 'paused') return;
+    setErrors(prev => [...prev, { index: currentIndex, type }]);
+  }, [currentIndex, phase]);
+
+  const undoLastError = useCallback(() => {
+    setErrors(prev => prev.slice(0, -1));
+  }, []);
+
+  const resetTask = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setSequence(null);
+    setErrors([]);
+    setCurrentIndex(-1);
+    setPhase('setup');
+  }, []);
+
+  // Compute results
+  const results = useMemo(() => {
+    if (!sequence || phase !== 'done') return null;
+    const half = Math.floor(sequence.length / 2);
+    const totalTargets = sequence.filter(s => s.isTarget).length;
+    const firstHalfTargets = sequence.slice(0, half).filter(s => s.isTarget).length;
+    const secondHalfTargets = sequence.slice(half).filter(s => s.isTarget).length;
+
+    const omissions = errors.filter(e => e.type === 'omission').length;
+    const commissions = errors.filter(e => e.type === 'commission').length;
+
+    const firstHalfErrors = errors.filter(e => e.index < half).length;
+    const secondHalfErrors = errors.filter(e => e.index >= half).length;
+
+    // Time degradation: more errors in second half relative to targets
+    const firstHalfRate = firstHalfTargets > 0 ? firstHalfErrors / firstHalfTargets : 0;
+    const secondHalfRate = secondHalfTargets > 0 ? secondHalfErrors / secondHalfTargets : 0;
+    const timeDegradation = secondHalfErrors > firstHalfErrors && (secondHalfRate - firstHalfRate) > 0.1;
+
+    return {
+      totalLetters: sequence.length,
+      totalTargets,
+      omissions,
+      commissions,
+      totalErrors: omissions + commissions,
+      firstHalfErrors,
+      secondHalfErrors,
+      firstHalfTargets,
+      secondHalfTargets,
+      timeDegradation,
+    };
+  }, [sequence, errors, phase]);
+
+  const sendToAssessment = useCallback(() => {
+    if (!results) return;
+    const payload = buildResultPayload(results);
+    let sent = false;
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'bedside-tool-result', payload }, '*');
+        sent = true;
+      }
+    } catch (e) {}
+    if (sent) {
+      setSendStatus('Sent');
+      setTimeout(() => setSendStatus(''), 2500);
+    } else {
+      const json = JSON.stringify(payload);
+      try { navigator.clipboard.writeText(json); } catch {
+        const ta = document.createElement('textarea');
+        ta.value = json; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      setSendStatus('Copied — paste in Assessment');
+      setTimeout(() => setSendStatus(''), 4000);
+    }
+  }, [results]);
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <div className="header">
+          <h1>CPT — A-Vigilance Task</h1>
+          <div className="subtitle">Continuous performance task for sustained attention assessment</div>
+        </div>
+
+        {IS_CHILD_MODE && (
+          <div className="send-banner">
+            Opened from Clinical Attention Assessment. When finished, use <strong>"Send to Assessment"</strong> to transfer results back.
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="card">
+          <div className="card-header"><h2>Administration</h2></div>
+          <div className="card-body">
+            <div className="instructions">
+              <ul>
+                <li>Letters are presented <strong>one per second</strong> for {Math.round(seqLength / 60)} minutes ({seqLength} letters).</li>
+                <li>Read each letter aloud as it appears. Instruct the patient to <strong>tap the table or raise a hand</strong> each time they hear the target letter.</li>
+                <li>Target frequency is ~10% (roughly 1 in 10 letters).</li>
+                <li>Mark errors in real time using the buttons below: <strong>Omission</strong> = patient missed a target; <strong>Commission</strong> = patient responded to a non-target.</li>
+                <li>The tool auto-scores first-half vs. second-half performance to detect <strong>time-on-task decline</strong>.</li>
+              </ul>
+            </div>
+            <div className="script">
+              <div className="script-label">Script</div>
+              "I'm going to read a series of letters, one at a time. Every time you hear the letter <strong>{targetLetter}</strong>, I want you to tap the table <em>[or raise your hand]</em>. Don't respond to any other letter — only <strong>{targetLetter}</strong>. This will take about {Math.round(seqLength / 60)} minutes. Ready?"
+            </div>
+            {phase === 'setup' && (
+              <>
+                <div className="config-row" style={{ marginTop: 16 }}>
+                  <div className="config-field">
+                    <label>Target letter:</label>
+                    <select value={targetLetter} onChange={e => setTargetLetter(e.target.value)}>
+                      <option value="A">A</option>
+                      <option value="E">E (use if patient's name starts with A)</option>
+                    </select>
+                  </div>
+                  <div className="config-field">
+                    <label>Duration:</label>
+                    <select value={seqLength} onChange={e => setSeqLength(Number(e.target.value))}>
+                      <option value={60}>1 min (60 letters)</option>
+                      <option value={120}>2 min (120 letters)</option>
+                      <option value={180}>3 min (180 letters)</option>
+                      <option value={240}>4 min (240 letters)</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="tip">
+                  💡 Longer durations are more sensitive to sustained attention deficits. 2 minutes is the minimum recommended; 3–4 minutes significantly improves detection of time-on-task decline.
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Presentation area */}
+        {(phase === 'running' || phase === 'paused') && sequence && (
+          <div className="card">
+            <div className="card-header"><h2>Live Presentation</h2></div>
+            <div className="card-body">
+              <div className="presentation-area">
+                {phase === 'paused' ? (
+                  <div className="current-letter"><span className="waiting-msg">Paused</span></div>
+                ) : (
+                  <div className={`current-letter ${sequence[currentIndex]?.isTarget ? 'target' : ''}`}>
+                    {sequence[currentIndex]?.letter || '—'}
+                  </div>
+                )}
+                <div className="progress-bar-container">
+                  <div className="progress-bar" style={{ width: `${((currentIndex + 1) / sequence.length) * 100}%` }}></div>
+                </div>
+                <div className="presentation-info">
+                  Letter {currentIndex + 1} of {sequence.length} — {Math.ceil((sequence.length - currentIndex - 1))} seconds remaining
+                  {currentIndex >= Math.floor(sequence.length / 2) ? ' (second half)' : ' (first half)'}
+                </div>
+              </div>
+
+              <div className="live-score-row">
+                <button className="live-score-btn omission" onClick={() => markError('omission')}>
+                  Omission ({errors.filter(e => e.type === 'omission').length})
+                </button>
+                <button className="live-score-btn commission" onClick={() => markError('commission')}>
+                  Commission ({errors.filter(e => e.type === 'commission').length})
+                </button>
+                {errors.length > 0 && (
+                  <button className="btn btn-secondary" onClick={undoLastError} style={{ fontSize: '0.78rem' }}>
+                    Undo last
+                  </button>
+                )}
+              </div>
+
+              <div className="presentation-controls">
+                {phase === 'running' ? (
+                  <button className="btn btn-secondary" onClick={pauseTask}>Pause</button>
+                ) : (
+                  <button className="btn btn-primary" onClick={resumeTask}>Resume</button>
+                )}
+                <button className="btn btn-secondary" onClick={stopTask}>End early</button>
+              </div>
+
+              {/* Letter log */}
+              <div style={{ marginTop: 20 }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--c-text-muted)', marginBottom: 6, fontWeight: 600 }}>
+                  LETTER LOG (targets highlighted, errors marked)
+                </div>
+                <div className="letter-log">
+                  {sequence.slice(0, currentIndex + 1).map((s, i) => {
+                    const err = errors.find(e => e.index === i);
+                    const isHalf = i === Math.floor(sequence.length / 2);
+                    let cls = 'log-letter';
+                    if (i === currentIndex) cls += ' current';
+                    if (s.isTarget && !err) cls += ' target';
+                    if (err?.type === 'omission') cls += ' omission';
+                    if (err?.type === 'commission') cls += ' commission';
+                    if (isHalf) cls += ' half-marker';
+                    return <div key={i} className={cls} title={err ? `${err.type} at position ${i + 1}` : s.isTarget ? `Target at position ${i + 1}` : ''}>{s.letter}</div>;
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Start button */}
+        {phase === 'setup' && (
+          <div className="action-bar">
+            <button className="btn btn-primary" onClick={startTask}>Start task</button>
+          </div>
+        )}
+
+        {/* Results */}
+        {phase === 'done' && results && (
+          <div className="card">
+            <div className="card-header"><h2>Results</h2></div>
+            <div className="card-body">
+              <div className="results-grid">
+                <div className="result-card">
+                  <div className="result-label">Omissions</div>
+                  <div className="result-value" style={{ color: results.omissions > 0 ? 'var(--c-fail)' : 'var(--c-pass)' }}>
+                    {results.omissions}
+                  </div>
+                  <div className="result-sub">of {results.totalTargets} targets missed</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Commissions</div>
+                  <div className="result-value" style={{ color: results.commissions > 0 ? '#e67e22' : 'var(--c-pass)' }}>
+                    {results.commissions}
+                  </div>
+                  <div className="result-sub">false alarms to non-targets</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Total errors</div>
+                  <div className="result-value">{results.totalErrors}</div>
+                  <div className="result-sub">across {results.totalLetters} letters</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">1st half errors</div>
+                  <div className="result-value">{results.firstHalfErrors}</div>
+                  <div className="result-sub">of {results.firstHalfTargets} targets</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">2nd half errors</div>
+                  <div className="result-value">{results.secondHalfErrors}</div>
+                  <div className="result-sub">of {results.secondHalfTargets} targets</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Suggested score</div>
+                  <div className="result-value">{computeSuggestedScore(results)}/5</div>
+                  <div className="result-sub">for parent assessment</div>
+                </div>
+              </div>
+
+              {results.timeDegradation ? (
+                <div className="degradation-panel warn">
+                  <strong>⚠ Time-on-Task Decline Detected</strong>
+                  Errors increased from {results.firstHalfErrors} (first half) to {results.secondHalfErrors} (second half). This pattern specifically implicates sustained attention — the ability to maintain vigilance over time — rather than selective attention. It is commonly seen in sleep deprivation, depression-related fatigue, ADHD, and neurocognitive conditions.
+                </div>
+              ) : (
+                <div className="degradation-panel normal">
+                  <strong>No significant time-on-task decline</strong>
+                  Error distribution was stable across halves ({results.firstHalfErrors} first half, {results.secondHalfErrors} second half), suggesting sustained attention was maintained throughout. If errors occurred, they likely reflect selective attention issues rather than vigilance decay.
+                </div>
+              )}
+
+              {/* Letter log for review */}
+              {sequence && (
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--c-text-muted)', marginBottom: 6, fontWeight: 600 }}>
+                    FULL LETTER LOG
+                  </div>
+                  <div className="letter-log">
+                    {sequence.map((s, i) => {
+                      const err = errors.find(e => e.index === i);
+                      const isHalf = i === Math.floor(sequence.length / 2);
+                      let cls = 'log-letter';
+                      if (s.isTarget && !err) cls += ' target';
+                      if (err?.type === 'omission') cls += ' omission';
+                      if (err?.type === 'commission') cls += ' commission';
+                      if (isHalf) cls += ' half-marker';
+                      return <div key={i} className={cls} title={err ? `${err.type} at position ${i + 1}` : s.isTarget ? 'Target' : ''}>{s.letter}</div>;
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Action bar */}
+        {phase === 'done' && results && (
+          <div className="action-bar">
+            <button className="btn btn-send" onClick={sendToAssessment}>
+              {sendStatus || 'Send to Assessment'}
+            </button>
+            <button className="btn btn-secondary" onClick={resetTask}>New task</button>
+          </div>
+        )}
+
+        <div className="footer">
+          Companion to the Clinical Attention Assessment.<br/>
+          Bedside A-vigilance CPT with ~10% target frequency and first-half/second-half time-on-task analysis.<br/>
+          Draft tool — not validated. Based on Albertella et al., <em>Psychiatr Clin N Am</em> (2026).
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(CPTAdmin));
+</script>
+</body>
+</html>

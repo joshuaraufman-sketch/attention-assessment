@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serial Subtraction — Administration Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body style="margin:0;padding:0">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useMemo } = React;
+
+// ──────────────────────────────────────────────────────────────────
+// Parent integration
+// ──────────────────────────────────────────────────────────────────
+
+const IS_CHILD_MODE = (() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('parent') === 'true';
+  } catch { return false; }
+})();
+
+const buildResultPayload = (score, results) => ({
+  tool: 'serial_subtraction',
+  version: 1,
+  results,
+  suggestedScores: score ? { task_4: score } : {},
+});
+
+// ──────────────────────────────────────────────────────────────────
+// CSS — same visual system as the rest of the suite
+// ──────────────────────────────────────────────────────────────────
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root {
+    --c-bg: #faf9f7;
+    --c-surface: #ffffff;
+    --c-text: #1a1a1a;
+    --c-text-secondary: #5a5a5a;
+    --c-text-muted: #8a8a8a;
+    --c-border: #e0ddd8;
+    --c-border-light: #eeedea;
+    --c-accent: #2c5f4a;
+    --c-accent-light: #e8f0ec;
+    --c-accent-hover: #1e4535;
+    --c-warn: #c0392b;
+    --c-warn-bg: #fdf0ef;
+    --c-pass: #27ae60;
+    --c-fail: #c0392b;
+    --c-pass-bg: #e8f5ed;
+    --c-fail-bg: #fdf0ef;
+    --c-slip: #e67e22;
+    --c-slip-bg: #fef5e7;
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --radius: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--c-bg); }
+
+  .app {
+    font-family: var(--font-body);
+    color: var(--c-text);
+    min-height: 100vh;
+    padding: 24px 16px 80px;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--c-accent);
+  }
+
+  .header h1 { font-family: var(--font-display); font-size: 1.85rem; font-weight: 700; color: var(--c-accent); }
+  .header .subtitle { font-size: 0.85rem; color: var(--c-text-muted); margin-top: 6px; }
+
+  .card { background: var(--c-surface); border-radius: var(--radius); border: 1px solid var(--c-border-light); box-shadow: var(--shadow-sm); margin-bottom: 20px; overflow: hidden; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--c-border-light); background: var(--c-accent-light); }
+  .card-header h2 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--c-accent); }
+  .card-body { padding: 18px 20px; }
+
+  .instructions { font-size: 0.85rem; line-height: 1.6; color: var(--c-text-secondary); }
+  .instructions ul { margin: 8px 0 8px 20px; }
+  .instructions li { margin-bottom: 4px; }
+  .instructions strong { color: var(--c-text); }
+
+  .script {
+    margin-top: 12px; padding: 12px 16px; background: #f8f7f5;
+    border-left: 3px solid var(--c-accent); border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 0.85rem; line-height: 1.55;
+  }
+  .script .script-label { font-size: 0.7rem; font-weight: 700; color: var(--c-accent); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+
+  /* ─── Mode selector ─── */
+  .mode-tabs {
+    display: flex; gap: 0; margin-bottom: 16px;
+    border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden;
+  }
+  .mode-tab {
+    flex: 1; padding: 10px; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600;
+    background: var(--c-surface); border: none; color: var(--c-text-muted); cursor: pointer; text-align: center;
+    border-right: 1px solid var(--c-border);
+  }
+  .mode-tab:last-child { border-right: none; }
+  .mode-tab.active { background: var(--c-accent); color: white; }
+
+  /* ─── Response entry ─── */
+  .response-area { margin-top: 16px; }
+
+  .expected-track {
+    padding: 12px 16px; background: #f8f7f5; border-radius: var(--radius);
+    margin-bottom: 16px; font-size: 0.82rem; color: var(--c-text-secondary); line-height: 1.5;
+  }
+
+  .expected-track .track-label {
+    font-size: 0.7rem; font-weight: 700; color: var(--c-accent);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px;
+  }
+
+  .expected-nums {
+    font-family: var(--font-mono); font-size: 0.9rem; color: var(--c-text); letter-spacing: 0.1em;
+  }
+
+  .response-row {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;
+  }
+
+  .response-num {
+    font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700;
+    width: 48px; height: 44px; text-align: center;
+    border: 1.5px solid var(--c-border); border-radius: 6px;
+    background: var(--c-surface); color: var(--c-text);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .response-input {
+    font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700;
+    width: 72px; height: 44px; text-align: center;
+    border: 1.5px solid var(--c-border); border-radius: 6px;
+    background: var(--c-surface); color: var(--c-text);
+    outline: none;
+  }
+  .response-input:focus { border-color: var(--c-accent); }
+
+  .response-classify {
+    display: flex; gap: 4px;
+  }
+
+  .classify-btn {
+    font-family: var(--font-body); font-size: 0.68rem; font-weight: 600;
+    padding: 6px 10px; border-radius: 4px;
+    border: 1.5px solid var(--c-border); background: var(--c-surface);
+    color: var(--c-text-muted); cursor: pointer; transition: all 0.12s;
+  }
+  .classify-btn:hover { border-color: var(--c-accent); color: var(--c-accent); }
+  .classify-btn.correct { background: var(--c-pass); border-color: var(--c-pass); color: white; }
+  .classify-btn.slip { background: var(--c-slip); border-color: var(--c-slip); color: white; }
+  .classify-btn.break { background: var(--c-fail); border-color: var(--c-fail); color: white; }
+  .classify-btn.stop { background: var(--c-text-muted); border-color: var(--c-text-muted); color: white; }
+
+  .response-note {
+    font-size: 0.72rem; color: var(--c-text-muted); font-style: italic; margin-left: 4px;
+  }
+
+  /* ─── Chain visualization ─── */
+  .chain-viz {
+    display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+    padding: 12px 0; margin-top: 8px; border-top: 1px solid var(--c-border-light);
+  }
+
+  .chain-node {
+    font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600;
+    padding: 4px 8px; border-radius: 4px; border: 1px solid transparent;
+  }
+  .chain-node.correct { background: var(--c-pass-bg); color: var(--c-pass); }
+  .chain-node.slip { background: var(--c-slip-bg); color: var(--c-slip); }
+  .chain-node.break { background: var(--c-fail-bg); color: var(--c-fail); }
+  .chain-node.stop { background: var(--c-bg); color: var(--c-text-muted); }
+  .chain-node.pending { background: var(--c-bg); color: var(--c-text-muted); border: 1px dashed var(--c-border); }
+  .chain-arrow { color: var(--c-border); font-size: 0.7rem; }
+
+  /* ─── Results ─── */
+  .results-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px; margin-bottom: 16px;
+  }
+  .result-card { padding: 14px; border-radius: var(--radius); border: 1px solid var(--c-border-light); background: var(--c-bg); text-align: center; }
+  .result-label { font-size: 0.7rem; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .result-value { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; line-height: 1; }
+  .result-sub { font-size: 0.72rem; color: var(--c-text-muted); margin-top: 4px; }
+
+  .interp-panel {
+    margin-top: 14px; padding: 14px 18px; border-radius: var(--radius);
+    font-size: 0.82rem; line-height: 1.55; border: 1px solid var(--c-border);
+  }
+  .interp-panel strong { display: block; margin-bottom: 4px; }
+
+  .btn { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; padding: 9px 18px; border-radius: var(--radius); border: none; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--c-accent); color: white; }
+  .btn-primary:hover { background: var(--c-accent-hover); }
+  .btn-secondary { background: var(--c-surface); color: var(--c-text-secondary); border: 1px solid var(--c-border); }
+  .btn-secondary:hover { border-color: var(--c-accent); color: var(--c-accent); }
+  .btn-send { background: #1a6b4a; color: white; border: 2px solid #1a6b4a; }
+  .btn-send:hover { background: #145538; border-color: #145538; }
+
+  .send-banner { padding: 10px 16px; margin-bottom: 20px; background: #e8f0ec; border: 1px solid #b8d4c4; border-radius: var(--radius); font-size: 0.82rem; color: var(--c-accent); line-height: 1.5; }
+  .action-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .tip { display: flex; gap: 10px; padding: 10px 14px; background: #fff8e6; border-left: 3px solid #e0a040; border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.8rem; line-height: 1.5; color: #7a5a10; margin-top: 12px; }
+  .footer { text-align: center; font-size: 0.72rem; color: var(--c-text-muted); margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--c-border-light); line-height: 1.6; }
+`;
+
+const MODES = {
+  serial7: { label: 'Serial 7s from 100', start: 100, step: 7, maxSteps: 14 },
+  serial3: { label: 'Serial 3s from 50', start: 50, step: 3, maxSteps: 16 },
+};
+
+function SerialSubtraction() {
+  const [mode, setMode] = useState('serial7');
+  const config = MODES[mode];
+  // Each response: { value: number|null, classification: 'correct'|'slip'|'break'|'stop'|null }
+  const [responses, setResponses] = useState(
+    Array.from({ length: config.maxSteps }, () => ({ value: '', classification: null }))
+  );
+  const [sendStatus, setSendStatus] = useState('');
+
+  const switchMode = useCallback((newMode) => {
+    setMode(newMode);
+    const c = MODES[newMode];
+    setResponses(Array.from({ length: c.maxSteps }, () => ({ value: '', classification: null })));
+  }, []);
+
+  const setResponseValue = useCallback((idx, val) => {
+    setResponses(prev => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], value: val };
+      return next;
+    });
+  }, []);
+
+  const setClassification = useCallback((idx, cls) => {
+    setResponses(prev => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], classification: next[idx].classification === cls ? null : cls };
+      return next;
+    });
+  }, []);
+
+  // Compute expected chain
+  const expectedChain = useMemo(() => {
+    const chain = [config.start];
+    for (let i = 0; i < config.maxSteps; i++) {
+      chain.push(chain[chain.length - 1] - config.step);
+    }
+    return chain;
+  }, [config]);
+
+  // Results
+  const results = useMemo(() => {
+    const classified = responses.filter(r => r.classification != null);
+    if (classified.length === 0) return null;
+
+    const correct = classified.filter(r => r.classification === 'correct').length;
+    const slips = classified.filter(r => r.classification === 'slip').length;
+    const breaks = classified.filter(r => r.classification === 'break').length;
+    const stops = classified.filter(r => r.classification === 'stop').length;
+    const total = classified.length - stops;
+
+    // Suggested score for task_4:
+    // 1: "Unable to begin" — 0 correct (or immediate stop)
+    // 2: "≤2 correct before stopping"
+    // 3: "3–4 correct with errors"
+    // 4: "Mostly correct, occasional error"
+    // 5: "Accurate and fluent"
+    let suggestedScore = 5;
+    if (total === 0 || (correct === 0 && stops > 0)) {
+      suggestedScore = 1;
+    } else if (correct <= 2) {
+      suggestedScore = 2;
+    } else if (correct <= 4 && (slips + breaks) > 0) {
+      suggestedScore = 3;
+    } else if ((slips + breaks) > 0) {
+      suggestedScore = 4;
+    }
+
+    return { correct, slips, breaks, stops, total, suggestedScore };
+  }, [responses]);
+
+  const resetAll = useCallback(() => {
+    setResponses(Array.from({ length: config.maxSteps }, () => ({ value: '', classification: null })));
+  }, [config]);
+
+  const sendToAssessment = useCallback(() => {
+    if (!results) return;
+    const payload = buildResultPayload(results.suggestedScore, results);
+    let sent = false;
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'bedside-tool-result', payload }, '*');
+        sent = true;
+      }
+    } catch (e) {}
+    if (sent) {
+      setSendStatus('Sent');
+      setTimeout(() => setSendStatus(''), 2500);
+    } else {
+      try { navigator.clipboard.writeText(JSON.stringify(payload)); } catch {
+        const ta = document.createElement('textarea');
+        ta.value = JSON.stringify(payload); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      setSendStatus('Copied — paste in Assessment');
+      setTimeout(() => setSendStatus(''), 4000);
+    }
+  }, [results]);
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <div className="header">
+          <h1>Serial Subtraction</h1>
+          <div className="subtitle">Serial 7s / Serial 3s with three-way response classification</div>
+        </div>
+
+        {IS_CHILD_MODE && (
+          <div className="send-banner">
+            Opened from Clinical Attention Assessment. When finished scoring, use <strong>"Send to Assessment"</strong> to transfer results back.
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="card">
+          <div className="card-header"><h2>Administration</h2></div>
+          <div className="card-body">
+            <div className="instructions">
+              <ul>
+                <li>Record each response the patient gives and classify it using three categories:</li>
+                <li><strong style={{ color: 'var(--c-pass)' }}>Correct</strong> — matches the expected value in the sequence.</li>
+                <li><strong style={{ color: 'var(--c-slip)' }}>Calc slip</strong> — arithmetic error, but the patient continues subtracting correctly from their wrong answer. This indicates <strong>intact attention</strong> with a calculation error — a different finding from attentional failure.</li>
+                <li><strong style={{ color: 'var(--c-fail)' }}>Sequence break</strong> — the patient loses the thread of the task entirely: random numbers, stops and restarts, or cannot continue. This indicates an <strong>attentional failure</strong>.</li>
+                <li>Allow and note self-corrections. If the patient self-corrects, classify as <strong>Correct</strong>.</li>
+              </ul>
+            </div>
+            <div className="script">
+              <div className="script-label">Script — Serial 7s</div>
+              "Starting from 100, subtract 7, and keep subtracting 7 from each answer. So: 100 minus 7 is...?"
+              <br/><br/>
+              <em>If the patient cannot do serial 7s after 2–3 attempts, switch to serial 3s:</em>
+              <br/><br/>
+              <div className="script-label" style={{ marginTop: 8 }}>Script — Serial 3s (fallback)</div>
+              "Let's try something a bit easier. Starting from 50, subtract 3, and keep going. So: 50 minus 3 is...?"
+            </div>
+          </div>
+        </div>
+
+        {/* Mode and scoring */}
+        <div className="card">
+          <div className="card-header"><h2>Response Scoring</h2></div>
+          <div className="card-body">
+            <div className="mode-tabs">
+              <button className={`mode-tab ${mode === 'serial7' ? 'active' : ''}`} onClick={() => switchMode('serial7')}>
+                Serial 7s (from 100)
+              </button>
+              <button className={`mode-tab ${mode === 'serial3' ? 'active' : ''}`} onClick={() => switchMode('serial3')}>
+                Serial 3s (from 50)
+              </button>
+            </div>
+
+            <div className="expected-track">
+              <div className="track-label">Expected sequence</div>
+              <div className="expected-nums">
+                {expectedChain.map((n, i) => (
+                  <span key={i}>{i > 0 ? ' → ' : ''}{n}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="response-area">
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--c-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Patient responses
+              </div>
+
+              {responses.map((resp, idx) => {
+                const expected = expectedChain[idx + 1];
+                return (
+                  <div className="response-row" key={idx}>
+                    <div className="response-num" style={{ background: 'var(--c-accent-light)', color: 'var(--c-accent)', fontSize: '0.75rem', width: 32, height: 32, borderColor: 'transparent' }}>
+                      {idx + 1}
+                    </div>
+                    <input
+                      className="response-input"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder={expected}
+                      value={resp.value}
+                      onChange={e => setResponseValue(idx, e.target.value)}
+                    />
+                    <div className="response-classify">
+                      <button className={`classify-btn ${resp.classification === 'correct' ? 'correct' : ''}`} onClick={() => setClassification(idx, 'correct')}>✓ Correct</button>
+                      <button className={`classify-btn ${resp.classification === 'slip' ? 'slip' : ''}`} onClick={() => setClassification(idx, 'slip')}>≈ Calc slip</button>
+                      <button className={`classify-btn ${resp.classification === 'break' ? 'break' : ''}`} onClick={() => setClassification(idx, 'break')}>✗ Seq break</button>
+                      <button className={`classify-btn ${resp.classification === 'stop' ? 'stop' : ''}`} onClick={() => setClassification(idx, 'stop')}>◼ Stopped</button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Chain visualization */}
+              <div className="chain-viz">
+                <span className="chain-node correct" style={{ background: 'var(--c-accent-light)', color: 'var(--c-accent)' }}>{config.start}</span>
+                {responses.map((resp, idx) => {
+                  const cls = resp.classification || 'pending';
+                  const val = resp.value || '?';
+                  return (
+                    <React.Fragment key={idx}>
+                      <span className="chain-arrow">→</span>
+                      <span className={`chain-node ${cls}`}>{resp.classification ? val : '?'}</span>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="tip">
+              💡 The key clinical distinction: a patient who says "100, 93, 84, 77, 70..." made one arithmetic error at step 2 (should be 86, not 84) but then correctly subtracted 7 from their wrong answer. This is a <em>calculation slip</em> with intact attention — very different from "100, 93, 85, 71, um, 60..." which shows attentional fragmentation.
+            </div>
+          </div>
+        </div>
+
+        {/* Results */}
+        {results && (
+          <div className="card">
+            <div className="card-header"><h2>Results</h2></div>
+            <div className="card-body">
+              <div className="results-grid">
+                <div className="result-card">
+                  <div className="result-label">Correct</div>
+                  <div className="result-value" style={{ color: 'var(--c-pass)' }}>{results.correct}</div>
+                  <div className="result-sub">of {results.total} responses</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Calc slips</div>
+                  <div className="result-value" style={{ color: results.slips > 0 ? 'var(--c-slip)' : 'var(--c-pass)' }}>{results.slips}</div>
+                  <div className="result-sub">arithmetic error, sequence intact</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Seq breaks</div>
+                  <div className="result-value" style={{ color: results.breaks > 0 ? 'var(--c-fail)' : 'var(--c-pass)' }}>{results.breaks}</div>
+                  <div className="result-sub">attentional failures</div>
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Suggested score</div>
+                  <div className="result-value" style={{ color: 'var(--c-accent)' }}>{results.suggestedScore}/5</div>
+                  <div className="result-sub">for parent assessment</div>
+                </div>
+              </div>
+
+              {results.slips > 0 && results.breaks === 0 && (
+                <div className="interp-panel" style={{ background: 'var(--c-slip-bg)', borderColor: '#f0d0a0' }}>
+                  <strong style={{ color: 'var(--c-slip)' }}>Calculation slips without sequence breaks</strong>
+                  <span style={{ color: '#7a5a10' }}>
+                    The patient made arithmetic errors but maintained the task structure — they continued subtracting correctly from their wrong answer. This pattern indicates <strong>intact attentional control</strong> with isolated calculation difficulty. The attentional system is not the primary problem here. Consider dyscalculia, educational background, or anxiety-related arithmetic interference rather than an attentional deficit.
+                  </span>
+                </div>
+              )}
+
+              {results.breaks > 0 && (
+                <div className="interp-panel" style={{ background: 'var(--c-fail-bg)', borderColor: '#e8b4ae' }}>
+                  <strong style={{ color: 'var(--c-fail)' }}>Sequence breaks detected</strong>
+                  <span style={{ color: 'var(--c-fail)' }}>
+                    The patient lost track of the task itself — not just the arithmetic. This represents an attentional failure rather than a calculation error. The distinction matters: attentional failures are non-specific and can be seen in delirium, depression, ADHD, anxiety, and neurocognitive conditions. Cross-reference with other attentional tasks to identify the pattern.
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="action-bar">
+          {results && (
+            <button className="btn btn-send" onClick={sendToAssessment}>
+              {sendStatus || 'Send to Assessment'}
+            </button>
+          )}
+          <button className="btn btn-secondary" onClick={resetAll}>Reset</button>
+        </div>
+
+        <div className="footer">
+          Companion to the Clinical Attention Assessment.<br/>
+          Three-way classification distinguishes attentional failures from calculation errors.<br/>
+          Draft tool — not validated. Based on Albertella et al., <em>Psychiatr Clin N Am</em> (2026).
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(SerialSubtraction));
+</script>
+</body>
+</html>
