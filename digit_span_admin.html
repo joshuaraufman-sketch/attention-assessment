@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digit Span — Administration Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body style="margin:0;padding:0">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useEffect, useRef, useMemo } = React;
+
+// ──────────────────────────────────────────────────────────────────
+// Sequence generation
+// Rules:
+//  - No three or more consecutive ascending or descending digits
+//  - No three or more identical consecutive digits
+//  - No 7-digit sequences resembling phone numbers
+//    (we just avoid sequences with too much internal regularity)
+//  - Each trial different from all others at the same length
+// ──────────────────────────────────────────────────────────────────
+
+const isBadSequence = (seq) => {
+  // Reject if any 3 consecutive digits are ascending or descending by 1
+  for (let i = 0; i < seq.length - 2; i++) {
+    const a = seq[i], b = seq[i+1], c = seq[i+2];
+    if ((b - a === 1 && c - b === 1) || (a - b === 1 && b - c === 1)) return true;
+    if (a === b && b === c) return true; // three identical in a row
+  }
+  // Reject if more than half the digits are the same
+  const counts = {};
+  seq.forEach(d => counts[d] = (counts[d] || 0) + 1);
+  const max = Math.max(...Object.values(counts));
+  if (max > Math.ceil(seq.length / 2)) return true;
+  // Reject sequences starting with very common phone-number prefixes
+  if (seq.length >= 7) {
+    const start = seq.slice(0, 3).join('');
+    if (['555', '800', '888', '877', '866', '900', '911', '411'].includes(start)) return true;
+  }
+  // Reject if it's too "round" — all even or all odd
+  if (seq.length >= 4 && seq.every(d => d % 2 === 0)) return true;
+  if (seq.length >= 4 && seq.every(d => d % 2 === 1)) return true;
+  return false;
+};
+
+const generateSequence = (length, existing = []) => {
+  let attempts = 0;
+  while (attempts < 200) {
+    attempts++;
+    const seq = Array.from({ length }, () => Math.floor(Math.random() * 10));
+    if (isBadSequence(seq)) continue;
+    const seqStr = seq.join('');
+    if (existing.includes(seqStr)) continue;
+    return seq;
+  }
+  // Fallback — shouldn't happen but just in case
+  return Array.from({ length }, () => Math.floor(Math.random() * 10));
+};
+
+const generateAllSequences = () => {
+  const forward = {};
+  const backward = {};
+  const used = [];
+
+  // Forward: 3 through 9 digits, 2 trials each
+  for (let len = 3; len <= 9; len++) {
+    forward[len] = [];
+    for (let t = 0; t < 2; t++) {
+      const seq = generateSequence(len, used);
+      forward[len].push(seq);
+      used.push(seq.join(''));
+    }
+  }
+
+  // Backward: 2 through 8 digits, 2 trials each
+  for (let len = 2; len <= 8; len++) {
+    backward[len] = [];
+    for (let t = 0; t < 2; t++) {
+      const seq = generateSequence(len, used);
+      backward[len].push(seq);
+      used.push(seq.join(''));
+    }
+  }
+
+  return { forward, backward };
+};
+
+// ──────────────────────────────────────────────────────────────────
+// Pacer hook — beeps once per second when active
+// ──────────────────────────────────────────────────────────────────
+
+const usePacer = () => {
+  const audioCtxRef = useRef(null);
+  const intervalRef = useRef(null);
+  const [active, setActive] = useState(false);
+  const [tick, setTick] = useState(0);
+
+  const beep = useCallback(() => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } catch (e) { /* audio not available */ }
+  }, []);
+
+  const start = useCallback(() => {
+    setActive(true);
+    setTick(0);
+    beep();
+    let t = 0;
+    intervalRef.current = setInterval(() => {
+      t++;
+      setTick(t);
+      beep();
+    }, 1000);
+  }, [beep]);
+
+  const stop = useCallback(() => {
+    setActive(false);
+    setTick(0);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => stop(), [stop]);
+
+  return { active, tick, start, stop };
+};
+
+// ──────────────────────────────────────────────────────────────────
+// Main component
+// ──────────────────────────────────────────────────────────────────
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+  :root {
+    --c-bg: #faf9f7;
+    --c-surface: #ffffff;
+    --c-text: #1a1a1a;
+    --c-text-secondary: #5a5a5a;
+    --c-text-muted: #8a8a8a;
+    --c-border: #e0ddd8;
+    --c-border-light: #eeedea;
+    --c-accent: #2c5f4a;
+    --c-accent-light: #e8f0ec;
+    --c-accent-hover: #1e4535;
+    --c-warn: #c0392b;
+    --c-warn-bg: #fdf0ef;
+    --c-pass: #27ae60;
+    --c-fail: #c0392b;
+    --c-pass-bg: #e8f5ed;
+    --c-fail-bg: #fdf0ef;
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --radius: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--c-bg);
+  }
+
+  .app {
+    font-family: var(--font-body);
+    color: var(--c-text);
+    min-height: 100vh;
+    padding: 24px 16px 80px;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--c-accent);
+  }
+
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    line-height: 1.2;
+  }
+
+  .header .subtitle {
+    font-size: 0.85rem;
+    color: var(--c-text-muted);
+    margin-top: 6px;
+  }
+
+  /* ─── Tabs ─── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .tab {
+    flex: 1;
+    padding: 12px 16px;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab:hover {
+    color: var(--c-accent);
+  }
+
+  .tab.active {
+    color: var(--c-accent);
+    border-bottom-color: var(--c-accent);
+  }
+
+  /* ─── Section cards ─── */
+  .card {
+    background: var(--c-surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--c-border-light);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--c-border-light);
+    background: var(--c-accent-light);
+  }
+
+  .card-header h2 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--c-accent);
+  }
+
+  .card-body {
+    padding: 18px 20px;
+  }
+
+  /* ─── Instructions ─── */
+  .instructions {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--c-text-secondary);
+  }
+
+  .instructions ul {
+    margin: 8px 0 8px 20px;
+    padding: 0;
+  }
+
+  .instructions li {
+    margin-bottom: 4px;
+  }
+
+  .instructions strong {
+    color: var(--c-text);
+  }
+
+  .script {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: #f8f7f5;
+    border-left: 3px solid var(--c-accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 0.85rem;
+    color: var(--c-text);
+    line-height: 1.55;
+  }
+
+  .script .script-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  .script em {
+    color: var(--c-text-secondary);
+  }
+
+  /* ─── Pacer ─── */
+  .pacer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--c-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--c-border);
+  }
+
+  .pacer-btn {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--c-accent);
+    background: var(--c-surface);
+    color: var(--c-accent);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .pacer-btn:hover {
+    background: var(--c-accent);
+    color: white;
+  }
+
+  .pacer-btn.active {
+    background: var(--c-accent);
+    color: white;
+  }
+
+  .pacer-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--c-border);
+    transition: all 0.1s;
+    flex-shrink: 0;
+  }
+
+  .pacer-dot.tick {
+    background: var(--c-accent);
+    transform: scale(1.4);
+  }
+
+  .pacer-text {
+    font-size: 0.78rem;
+    color: var(--c-text-muted);
+  }
+
+  /* ─── Sequence table ─── */
+  .seq-section-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--c-text);
+    margin: 18px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--c-border-light);
+  }
+
+  .seq-section-title:first-child {
+    margin-top: 0;
+  }
+
+  .seq-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 1fr 90px;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--c-border-light);
+  }
+
+  .seq-row.header-row {
+    border-bottom: 2px solid var(--c-border);
+    padding-bottom: 8px;
+  }
+
+  .seq-row.header-row > div {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--c-text-muted);
+  }
+
+  .seq-len {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    text-align: center;
+  }
+
+  .seq-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .seq-display {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 500;
+    letter-spacing: 0.4em;
+    color: var(--c-text);
+    padding: 6px 10px;
+    background: #f8f7f5;
+    border-radius: 6px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .trial-btns {
+    display: flex;
+    gap: 4px;
+  }
+
+  .trial-btn {
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 5px 8px;
+    border-radius: 4px;
+    border: 1.5px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text-muted);
+    cursor: pointer;
+    transition: all 0.1s;
+    min-width: 32px;
+  }
+
+  .trial-btn:hover {
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+  }
+
+  .trial-btn.pass {
+    background: var(--c-pass);
+    border-color: var(--c-pass);
+    color: white;
+  }
+
+  .trial-btn.fail {
+    background: var(--c-fail);
+    border-color: var(--c-fail);
+    color: white;
+  }
+
+  .seq-status {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+
+  .seq-status.pass {
+    background: var(--c-pass-bg);
+    color: var(--c-pass);
+  }
+
+  .seq-status.fail {
+    background: var(--c-fail-bg);
+    color: var(--c-fail);
+  }
+
+  .seq-status.pending {
+    color: var(--c-text-muted);
+  }
+
+  /* ─── Results ─── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .result-card {
+    padding: 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--c-border-light);
+    background: var(--c-bg);
+    text-align: center;
+  }
+
+  .result-label {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .result-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--c-accent);
+    line-height: 1;
+  }
+
+  .result-norm {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+    margin-top: 4px;
+  }
+
+  .result-flag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 6px;
+    padding: 3px 8px;
+    border-radius: 100px;
+    display: inline-block;
+  }
+
+  .result-flag.normal {
+    background: var(--c-pass-bg);
+    color: var(--c-pass);
+  }
+
+  .result-flag.below {
+    background: var(--c-fail-bg);
+    color: var(--c-fail);
+  }
+
+  .result-flag.discrepancy {
+    background: var(--c-warn-bg);
+    color: var(--c-warn);
+  }
+
+  /* ─── Discrepancy panel ─── */
+  .discrepancy-panel {
+    margin-top: 14px;
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+
+  .discrepancy-panel.warn {
+    background: var(--c-warn-bg);
+    border: 1px solid #e8b4ae;
+    color: var(--c-warn);
+  }
+
+  .discrepancy-panel.normal {
+    background: var(--c-pass-bg);
+    border: 1px solid #b8d4c4;
+    color: var(--c-pass);
+  }
+
+  .discrepancy-panel strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.88rem;
+  }
+
+  /* ─── Action buttons ─── */
+  .action-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .btn {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--c-accent);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: var(--c-accent-hover);
+  }
+
+  .btn-secondary {
+    background: var(--c-surface);
+    color: var(--c-text-secondary);
+    border: 1px solid var(--c-border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+  }
+
+  /* ─── Tip box ─── */
+  .tip {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #fff8e6;
+    border-left: 3px solid #e0a040;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #7a5a10;
+    margin-top: 12px;
+  }
+
+  /* ─── Send to assessment ─── */
+  .btn-send {
+    background: #1a6b4a;
+    color: white;
+    border: 2px solid #1a6b4a;
+    position: relative;
+  }
+
+  .btn-send:hover {
+    background: #145538;
+    border-color: #145538;
+  }
+
+  .btn-send:disabled {
+    background: var(--c-border);
+    border-color: var(--c-border);
+    cursor: not-allowed;
+  }
+
+  .send-banner {
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    background: #e8f0ec;
+    border: 1px solid #b8d4c4;
+    border-radius: var(--radius);
+    font-size: 0.82rem;
+    color: var(--c-accent);
+    line-height: 1.5;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--c-border-light);
+    line-height: 1.6;
+  }
+
+  /* ─── Mobile adjustments ─── */
+  @media (max-width: 600px) {
+    .seq-row {
+      grid-template-columns: 40px 1fr 80px;
+      grid-template-areas:
+        "len seq trials"
+        "len status status";
+      gap: 6px;
+    }
+    .seq-row.header-row {
+      grid-template-columns: 40px 1fr 80px;
+    }
+    .seq-row.header-row > .seq-status-header {
+      display: none;
+    }
+    .seq-len { grid-area: len; }
+    .seq-cell { grid-area: seq; }
+    .trial-btns { grid-area: trials; justify-content: flex-end; }
+    .seq-status { grid-area: status; }
+    .seq-display {
+      font-size: 0.95rem;
+      letter-spacing: 0.3em;
+    }
+  }
+`;
+
+const FORWARD_LENGTHS = [3, 4, 5, 6, 7, 8, 9];
+const BACKWARD_LENGTHS = [2, 3, 4, 5, 6, 7, 8];
+
+// ──────────────────────────────────────────────────────────────────
+// Parent integration — postMessage back to the Clinical Assessment
+// ──────────────────────────────────────────────────────────────────
+
+const IS_CHILD_MODE = (() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('parent') === 'true';
+  } catch { return false; }
+})();
+
+// Map forward span to task_1 anchor score (1-5)
+const forwardSpanToScore = (span) => {
+  if (span <= 2) return 1;  // "≤2 digits"
+  if (span === 3) return 2; // "3 digits"
+  if (span === 4) return 3; // "4 digits"
+  if (span === 5) return 4; // "5 digits"
+  return 5;                 // "≥6 digits"
+};
+
+// Map backward span to task_2 anchor score (1-5)
+const backwardSpanToScore = (span) => {
+  if (span <= 1) return 1;  // "Unable to perform"
+  if (span === 2) return 2; // "2 digits"
+  if (span === 3) return 3; // "3 digits"
+  if (span === 4) return 4; // "4 digits"
+  return 5;                 // "≥5 digits"
+};
+
+const buildResultPayload = (forwardSpan, backwardSpan) => {
+  const payload = {
+    tool: 'digit_span',
+    version: 1,
+    results: {
+      forwardSpan,
+      backwardSpan,
+      discrepancy: forwardSpan > 0 && backwardSpan > 0 ? forwardSpan - backwardSpan : null,
+      forwardFlag: forwardSpan >= 5 ? 'normal' : 'below',
+      backwardFlag: backwardSpan >= 3 ? 'normal' : 'below',
+    },
+    suggestedScores: {},
+  };
+  if (forwardSpan > 0) payload.suggestedScores.task_1 = forwardSpanToScore(forwardSpan);
+  if (backwardSpan > 0) payload.suggestedScores.task_2 = backwardSpanToScore(backwardSpan);
+  return payload;
+};
+
+function DigitSpan() {
+  const [sequences, setSequences] = useState(() => generateAllSequences());
+  const [trials, setTrials] = useState({});
+  // trials: { 'forward-3-0': 'pass'|'fail'|null, 'forward-3-1': ... }
+  const [activeTab, setActiveTab] = useState('forward');
+  const pacer = usePacer();
+
+  const setTrial = useCallback((key) => {
+    setTrials(prev => {
+      const current = prev[key];
+      const next = current === 'pass' ? 'fail' : current === 'fail' ? null : 'pass';
+      return { ...prev, [key]: next };
+    });
+  }, []);
+
+  const regenerate = useCallback(() => {
+    if (!confirm('Generate new sequences? This will clear all current scoring.')) return;
+    setSequences(generateAllSequences());
+    setTrials({});
+  }, []);
+
+  const resetTrials = useCallback(() => {
+    if (!confirm('Clear all scoring? Sequences will remain the same.')) return;
+    setTrials({});
+  }, []);
+
+  // Compute span for a given direction
+  const computeSpan = (direction, lengths) => {
+    let span = 0;
+    for (const len of lengths) {
+      const t1 = trials[`${direction}-${len}-0`];
+      const t2 = trials[`${direction}-${len}-1`];
+      if (t1 === 'pass' || t2 === 'pass') {
+        span = len;
+      } else if (t1 === 'fail' && t2 === 'fail') {
+        // Both trials at this length failed — stop
+        break;
+      } else if (t1 == null && t2 == null) {
+        // Not yet tested — don't count beyond this
+        break;
+      }
+      // If one trial is pass and the other unrated, we still count the pass
+      // but we keep going since the next length might be tested
+    }
+    return span;
+  };
+
+  const forwardSpan = useMemo(() => computeSpan('forward', FORWARD_LENGTHS), [trials]);
+  const backwardSpan = useMemo(() => computeSpan('backward', BACKWARD_LENGTHS), [trials]);
+
+  const discrepancy = forwardSpan > 0 && backwardSpan > 0 ? forwardSpan - backwardSpan : null;
+  const flagDiscrepancy = discrepancy !== null && discrepancy > 2;
+
+  const [sendStatus, setSendStatus] = useState('');
+
+  const sendToAssessment = useCallback(() => {
+    if (forwardSpan === 0 && backwardSpan === 0) return;
+    const payload = buildResultPayload(forwardSpan, backwardSpan);
+    let sent = false;
+    // Try postMessage to opener window
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'bedside-tool-result', payload }, '*');
+        sent = true;
+      }
+    } catch (e) { /* cross-origin or blocked */ }
+    if (sent) {
+      setSendStatus('Sent');
+      setTimeout(() => setSendStatus(''), 2500);
+    } else {
+      // Fallback: copy JSON to clipboard for manual paste
+      const json = JSON.stringify(payload);
+      try {
+        navigator.clipboard.writeText(json);
+        setSendStatus('Copied — paste in Assessment');
+        setTimeout(() => setSendStatus(''), 4000);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = json;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        setSendStatus('Copied — paste in Assessment');
+        setTimeout(() => setSendStatus(''), 4000);
+      }
+    }
+  }, [forwardSpan, backwardSpan]);
+
+  const renderSequenceTable = (direction) => {
+    const lengths = direction === 'forward' ? FORWARD_LENGTHS : BACKWARD_LENGTHS;
+    const seqs = sequences[direction];
+
+    return (
+      <div>
+        <div className="seq-row header-row">
+          <div>Len</div>
+          <div>Trial 1</div>
+          <div>Trial 2</div>
+          <div className="seq-status-header">Status</div>
+        </div>
+        {lengths.map(len => {
+          const t1Key = `${direction}-${len}-0`;
+          const t2Key = `${direction}-${len}-1`;
+          const t1 = trials[t1Key];
+          const t2 = trials[t2Key];
+          const passed = t1 === 'pass' || t2 === 'pass';
+          const bothFailed = t1 === 'fail' && t2 === 'fail';
+          let statusText = '—';
+          let statusClass = 'pending';
+          if (passed) {
+            statusText = 'Pass';
+            statusClass = 'pass';
+          } else if (bothFailed) {
+            statusText = 'Discontinue';
+            statusClass = 'fail';
+          }
+
+          return (
+            <React.Fragment key={len}>
+              <div className="seq-row">
+                <div className="seq-len">{len}</div>
+                <div className="seq-cell">
+                  <div className="seq-display">{seqs[len][0].join(' ')}</div>
+                  <div className="trial-btns">
+                    <button
+                      className={`trial-btn ${t1 === 'pass' ? 'pass' : t1 === 'fail' ? 'fail' : ''}`}
+                      onClick={() => setTrial(t1Key)}
+                      title="Click to cycle: untouched → pass → fail → untouched"
+                    >
+                      {t1 === 'pass' ? '✓' : t1 === 'fail' ? '✗' : '—'}
+                    </button>
+                  </div>
+                </div>
+                <div className="seq-cell">
+                  <div className="seq-display">{seqs[len][1].join(' ')}</div>
+                  <div className="trial-btns">
+                    <button
+                      className={`trial-btn ${t2 === 'pass' ? 'pass' : t2 === 'fail' ? 'fail' : ''}`}
+                      onClick={() => setTrial(t2Key)}
+                      title="Click to cycle: untouched → pass → fail → untouched"
+                    >
+                      {t2 === 'pass' ? '✓' : t2 === 'fail' ? '✗' : '—'}
+                    </button>
+                  </div>
+                </div>
+                <div className={`seq-status ${statusClass}`}>{statusText}</div>
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <style>{css}</style>
+      <div className="app">
+        <div className="header">
+          <h1>Digit Span — Administration Tool</h1>
+          <div className="subtitle">Bedside resource for forward & backward digit span testing</div>
+        </div>
+
+        {IS_CHILD_MODE && (
+          <div className="send-banner">
+            Opened from Clinical Attention Assessment. When finished scoring, use <strong>"Send to Assessment"</strong> below to transfer results back automatically.
+          </div>
+        )}
+
+        {/* Pacer */}
+        <div className="card">
+          <div className="card-header">
+            <h2>1-Hz Pacer</h2>
+          </div>
+          <div className="card-body">
+            <div className="pacer">
+              <button
+                className={`pacer-btn ${pacer.active ? 'active' : ''}`}
+                onClick={pacer.active ? pacer.stop : pacer.start}
+              >
+                {pacer.active ? 'Stop' : 'Start'} pacer
+              </button>
+              <div className={`pacer-dot ${pacer.active && pacer.tick % 2 === 0 ? 'tick' : ''}`}></div>
+              <div className="pacer-text">
+                {pacer.active
+                  ? 'Read one digit per beep. Avoid rhythmic grouping or vocal stress patterns.'
+                  : 'Plays a soft tone once per second to anchor delivery rate.'}
+              </div>
+            </div>
+            <div className="tip">
+              💡 The most common administration error is reading too fast (~1.5–2 Hz), which inflates spans by 1–2 digits. Use the pacer for at least the first few patients until 1 Hz feels natural.
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="tabs">
+          <button
+            className={`tab ${activeTab === 'forward' ? 'active' : ''}`}
+            onClick={() => setActiveTab('forward')}
+          >
+            Forward (attention)
+          </button>
+          <button
+            className={`tab ${activeTab === 'backward' ? 'active' : ''}`}
+            onClick={() => setActiveTab('backward')}
+          >
+            Backward (working memory)
+          </button>
+          <button
+            className={`tab ${activeTab === 'results' ? 'active' : ''}`}
+            onClick={() => setActiveTab('results')}
+          >
+            Results
+          </button>
+        </div>
+
+        {/* Forward */}
+        {activeTab === 'forward' && (
+          <>
+            <div className="card">
+              <div className="card-header">
+                <h2>Forward — Administration</h2>
+              </div>
+              <div className="card-body">
+                <div className="instructions">
+                  <ul>
+                    <li>Read each sequence at <strong>one digit per second</strong>. Avoid rhythmic grouping (no chunking like "5-2-7... 8-4").</li>
+                    <li>Start at length 3. Give <strong>both trials</strong> at each length even if the first passes — this reduces ceiling artifacts and improves reliability.</li>
+                    <li>Discontinue when the patient fails <strong>both</strong> trials at a given length.</li>
+                    <li>Score: longest length where the patient correctly repeated <strong>at least one</strong> of two trials.</li>
+                  </ul>
+                </div>
+                <div className="script">
+                  <div className="script-label">Script</div>
+                  "I'm going to say some numbers. After I finish, repeat them back to me <strong>in the same order</strong>. Listen carefully — I'll only say each list once. Ready?"
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <h2>Forward — Sequences & Scoring</h2>
+              </div>
+              <div className="card-body">
+                {renderSequenceTable('forward')}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Backward */}
+        {activeTab === 'backward' && (
+          <>
+            <div className="card">
+              <div className="card-header">
+                <h2>Backward — Administration</h2>
+              </div>
+              <div className="card-body">
+                <div className="instructions">
+                  <ul>
+                    <li><strong>Demonstrate first</strong> with a 2-digit example (see script). Confirm the patient understands before starting trials.</li>
+                    <li>Read at <strong>one digit per second</strong>, no rhythmic grouping.</li>
+                    <li>Start at length 2. Give both trials at each length.</li>
+                    <li>Discontinue when the patient fails both trials at a given length.</li>
+                    <li>Score: longest length where the patient correctly reversed <strong>at least one</strong> of two trials.</li>
+                    <li><strong>Forward − Backward &gt; 2</strong> suggests a working memory deficit beyond simple attentional impairment.</li>
+                  </ul>
+                </div>
+                <div className="script">
+                  <div className="script-label">Script — demonstration</div>
+                  "Now I'll say more numbers, but this time I want you to repeat them <strong>backward</strong>. For example, if I say <strong>3, 8</strong>, you would say <strong>8, 3</strong>. If I say <strong>1, 7, 4</strong>, you would say <strong>4, 7, 1</strong>. Let's try one — <em>[say 5, 9]</em> — what would you say?"
+                  <br/><br/>
+                  <em>Wait for correct response (9, 5) before proceeding. If wrong, demonstrate again with a different pair. Do not proceed to trials until the patient demonstrates understanding.</em>
+                </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-header">
+                <h2>Backward — Sequences & Scoring</h2>
+              </div>
+              <div className="card-body">
+                {renderSequenceTable('backward')}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Results */}
+        {activeTab === 'results' && (
+          <div className="card">
+            <div className="card-header">
+              <h2>Results</h2>
+            </div>
+            <div className="card-body">
+              <div className="results-grid">
+                <div className="result-card">
+                  <div className="result-label">Forward span</div>
+                  <div className="result-value">{forwardSpan || '—'}</div>
+                  <div className="result-norm">Normal ≥ 5</div>
+                  {forwardSpan > 0 && (
+                    <div className={`result-flag ${forwardSpan >= 5 ? 'normal' : 'below'}`}>
+                      {forwardSpan >= 5 ? 'Within normal limits' : 'Below normal'}
+                    </div>
+                  )}
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Backward span</div>
+                  <div className="result-value">{backwardSpan || '—'}</div>
+                  <div className="result-norm">Normal ≥ 3</div>
+                  {backwardSpan > 0 && (
+                    <div className={`result-flag ${backwardSpan >= 3 ? 'normal' : 'below'}`}>
+                      {backwardSpan >= 3 ? 'Within normal limits' : 'Below normal'}
+                    </div>
+                  )}
+                </div>
+                <div className="result-card">
+                  <div className="result-label">Forward − Backward</div>
+                  <div className="result-value">{discrepancy !== null ? discrepancy : '—'}</div>
+                  <div className="result-norm">Concerning if &gt; 2</div>
+                  {discrepancy !== null && (
+                    <div className={`result-flag ${flagDiscrepancy ? 'discrepancy' : 'normal'}`}>
+                      {flagDiscrepancy ? 'Elevated' : 'Within expected range'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {flagDiscrepancy && (
+                <div className="discrepancy-panel warn">
+                  <strong>⚠ Forward–Backward Discrepancy: {discrepancy} digits</strong>
+                  A discrepancy greater than 2 digits suggests that working memory (manipulation) is more impaired than the patient's basic attentional capacity (registration and immediate recall). This pattern is seen in conditions involving prefrontal/executive dysfunction — including ADHD, depression with cognitive features, early neurocognitive decline, frontal lesions, and certain medication effects (anticholinergics, benzodiazepines). Consider follow-up with formal neuropsychological assessment if this finding is unexpected or persists after addressing reversible factors.
+                </div>
+              )}
+
+              {!flagDiscrepancy && discrepancy !== null && (
+                <div className="discrepancy-panel normal">
+                  <strong>Forward–Backward gap within expected range</strong>
+                  A gap of 0–2 digits is typical. Forward and backward spans are tracking together, suggesting the manipulation component of working memory is not selectively impaired relative to attentional registration. If forward span itself is below normal, the limitation is more likely at the level of attention/registration than working memory per se.
+                </div>
+              )}
+
+              {forwardSpan === 0 && backwardSpan === 0 && (
+                <div className="tip" style={{ marginTop: 16 }}>
+                  No trials scored yet. Switch to the Forward or Backward tab to administer.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Action bar */}
+        <div className="action-bar">
+          {(forwardSpan > 0 || backwardSpan > 0) && (
+            <button className="btn btn-send" onClick={sendToAssessment}>
+              {sendStatus || (IS_CHILD_MODE ? 'Send to Assessment' : 'Send to Assessment')}
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={regenerate}>Generate new sequences</button>
+          <button className="btn btn-secondary" onClick={resetTrials}>Clear scoring</button>
+        </div>
+
+        <div className="footer">
+          Companion to the Clinical Attention Assessment.<br/>
+          Norms: forward ≥ 5, backward ≥ 3 (Albertella et al., 2026; Lezak, <em>Neuropsychological Assessment</em>).<br/>
+          Sequences regenerate randomly with patterns filtered (no ascending/descending runs ≥ 3, no triple-repeats, no phone-prefix starts).
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(DigitSpan));
+</script>
+</body>
+</html>
