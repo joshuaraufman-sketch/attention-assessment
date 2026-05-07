@@ -63,6 +63,32 @@ const SECTIONS = [
         anchors: ["Isolated to one context", "Primarily one setting, mild in others", "Two settings affected", "Most settings affected", "Pervasive across all contexts"],
         administration: "Ask about attention/concentration at work, at home, in social settings, and during leisure activities. ADHD-pattern dysfunction typically shows friction across multiple settings. Context-specific dysfunction suggests the attentional difficulty may be driven by the emotional/motivational characteristics of that setting. Also probe for interest-based variation: \"Are there things you can focus on easily?\" The ability to hyperfocus on novel/rewarding tasks while being completely blocked by routine/low-reward tasks is characteristic of ADHD.",
       },
+      {
+        id: "temp_4",
+        text: "Developmental trajectory pattern",
+        isQualitative: true,
+        anchors: [
+          "Childhood ADHD → stable adult ADHD",
+          "Childhood ADHD → emerging mood episodes (heterotypic)",
+          "Adult-onset attentional symptoms (no childhood history)",
+          "Lifelong with mood overlay (homotypic)",
+          "Cannot determine",
+        ],
+        administration: "Per Comparelli et al. (2022) and Faedda's heterotypic trajectory framework, the developmental sequence has diagnostic weight beyond simple course. Probe: 'Were you identified as having attention problems as a child?' 'When did mood symptoms first appear relative to attention symptoms?' 'Did mood episodes start in adolescence or later?' Heterotypic trajectory (childhood ADHD → adult mood episodes) suggests a distinct clinical phenotype with implications for treatment sequencing.",
+      },
+      {
+        id: "interest_var",
+        text: "Interest-based attentional variation — capacity for hyperfocus on novel/rewarding tasks",
+        isQualitative: true,
+        anchors: [
+          "No hyperfocus capacity",
+          "Mild differential by interest",
+          "Moderate — better focus on preferred activities",
+          "Marked — can hyperfocus on novel/rewarding, blocked on routine",
+          "Extreme — hyperfocus dominates, cannot disengage",
+        ],
+        administration: "Probe: 'Are there things you can focus on for hours without difficulty? What's different about those activities versus the ones you struggle with?' The pattern of being able to hyperfocus on novel, rewarding, or self-selected tasks while being completely blocked by routine, low-reward, or other-imposed tasks is a strong ADHD signal — distinct from generalized attentional deficits seen in mood disorders, where focus is impaired across the board including on previously enjoyable activities.",
+      },
     ],
   },
   {
@@ -87,6 +113,18 @@ const SECTIONS = [
     items: [
       { id: "dyn_1", text: "Tenacity — ability to sustain focused concentration on a single target or topic", anchors: ["Hypotenacity — cannot fix attention", "Reduced tenacity", "Normal tenacity", "Mildly increased tenacity", "Hypertenacity — rigidly fixated"] },
       { id: "dyn_2", text: "Vigilance (mobility) — ability to appropriately shift attention to new relevant stimuli", anchors: ["Hypovigilance — fails to shift", "Reduced shifting", "Normal mobility", "Increased shifting", "Hypervigilance — shifts to every stimulus"] },
+      {
+        id: "dyn_subtype",
+        text: "Hyperactivity / impulsivity features beyond inattention",
+        anchors: [
+          "None — purely inattentive picture",
+          "Mild restlessness only",
+          "Moderate fidgeting / verbal disinhibition",
+          "Prominent hyperactivity / impulsivity",
+          "Marked behavioral disinhibition / pressured presentation",
+        ],
+        administration: "Per Wilens et al. (2003), 96% of adults with comorbid ADHD+BD have the combined subtype vs. 59% in ADHD without BD. The combined presentation has greater overlap with mood-spectrum and emotional dysregulation symptoms. Distinguish from manic/hypomanic activation by stability over time — combined ADHD is trait-level, mania is episodic. Score includes both observed behavior during interview and reported behavior in daily life.",
+      },
       // Revision 2: Expanded variability
       { id: "var_1", text: "Within-session variability — moment-to-moment fluctuation in performance during this encounter", anchors: ["None", "Mild", "Moderate", "Marked", "Extreme"] },
       { id: "var_2", text: "Day-to-day variability — patient-reported fluctuation across days (by history)", anchors: ["None", "Mild", "Moderate", "Marked", "Extreme"], isQualitative: true, administration: "Ask: \"Do you have good days and bad days for concentration, or is it about the same every day?\" \"How different are your best days from your worst days?\"" },
@@ -103,6 +141,19 @@ const SECTIONS = [
         id: "dyn_phenom", text: "Subjective attentional experience — what is the qualitative 'texture' of the attentional difficulty?", isQualitative: true,
         anchors: ["Foggy / slowed", "Scattered / externally pulled", "Crowded (too many thoughts)", "Racing (accelerated, pressured)", "Blank / disengaged", "Overcontrolled / perfectionistic", "No difficulty"],
         administration: "Ask: \"When your concentration is at its worst, what does it feel like inside your head?\" Key patterns: Foggy/slowed → delirium, depression, medication effects, fatigue. Scattered/pulled → ADHD, anxiety, hyperactive delirium. Crowded → OCD, GAD, PTSD, psychosis-spectrum. Racing → mania/hypomania, stimulant effects, severe anxiety. Blank/disengaged → depression, dissociation, apathy syndromes. Overcontrolled → perfectionism, social anxiety, OCPD.",
+      },
+      {
+        id: "dyn_content",
+        text: "Quality of internal content (when attention is captured internally)",
+        isQualitative: true,
+        anchors: [
+          "Ego-syntonic worry / rumination",
+          "Ego-dystonic intrusions (resisted, unwanted)",
+          "Trauma-related re-experiencing",
+          "Bizarre or grandiose preoccupation",
+          "Cannot characterize / patient cannot articulate",
+        ],
+        administration: "If the patient endorses internal attentional capture (per dyn_capture), characterize the content. Probe: 'When your mind is captured by these thoughts, do they feel like *your* thoughts that you're stuck on, or do they feel intrusive — unwanted, that you'd push away if you could?' 'Are they connected to past events you keep returning to?' Differentiates the treatment target: rumination → mood/anxiety treatment; intrusions → OCD/trauma; bizarre content → psychosis workup.",
       },
       // Revision 4: Affective coupling
       {
@@ -129,6 +180,19 @@ const SECTIONS = [
     subtitle: "Factors affecting attentional performance",
     instructions: "Document factors that may be contributing to attentional findings. These inform interpretation rather than scoring.",
     items: [
+      {
+        id: "med_mimic",
+        text: "Medical mimic screen — identifiable medical contributors to cognitive symptoms",
+        isQualitative: true,
+        anchors: [
+          "OSA features (snoring, witnessed apneas, daytime sleepiness)",
+          "Thyroid status unknown or abnormal",
+          "Recent hormonal transition (perimenopause, postpartum, andropause)",
+          "Post-viral / post-COVID cognitive symptoms",
+          "None of the above identified",
+        ],
+        administration: "Screen briefly for the most common medical mimics of attentional dysfunction before psychiatric attribution. OSA is the highest-yield miss — ask about snoring, witnessed apneas, daytime sleepiness (Epworth-style probe), and morning headaches. For women, ask about menstrual/menopausal status. For acute-onset cases, ask about recent viral illness (including COVID). If any contributor is identified, defer attentional diagnosis pending workup.",
+      },
       { id: "ctx_1", text: "Sleep status — hours of sleep in past 24h and recent sleep pattern", anchors: ["Severe deprivation (<2h)", "Moderate deprivation (2–4h)", "Mild deprivation (4–6h)", "Adequate (6–7h)", "Well-rested (≥7h)"] },
       { id: "ctx_2", text: "Acute stress level at time of assessment", anchors: ["Severe acute stress", "Moderate stress", "Mild stress", "Minimal stress", "Calm/relaxed"] },
       { id: "ctx_3", text: "Medication effects — current psychotropic or other medications with known attentional impact", anchors: ["Likely significant impact", "Probable moderate impact", "Possible mild impact", "Unlikely impact", "No relevant medications"] },
@@ -195,18 +259,48 @@ const SCORED_DOMAINS = ['observation', 'orientation', 'attentional_tasks', 'atte
 // Diagnostic Pathway Engine
 // ──────────────────────────────────────────────────────────────────
 
+// Weighted scoring helper
+const scorePathway = (criteria) => {
+  let score = 0;
+  let anchorMet = false;
+  const met = [];
+  for (const c of criteria) {
+    if (c.met) {
+      score += c.weight;
+      met.push(c.label);
+      if (c.tier === 'anchor') anchorMet = true;
+    }
+  }
+  return { score, anchorMet, met };
+};
+
+const buildCriterion = (label, met, tier) => {
+  const weights = { anchor: 3, supporting: 2, consistent: 1 };
+  return { label, met, tier, weight: weights[tier] };
+};
+
 function evaluatePathways(scores, sectionAvgs) {
   const s = (id) => scores[id];
   const obsAvg = sectionAvgs.observation;
   const oriAvg = sectionAvgs.orientation;
   const taskAvg = sectionAvgs.attentional_tasks;
 
-  // Computed features
+  // ── Computed features ──
   const lowVar = (s("var_1") != null && s("var_1") <= 2) && (s("var_2") == null || s("var_2") <= 2);
   const highVar = (s("var_1") != null && s("var_1") >= 3) || (s("var_2") != null && s("var_2") >= 3);
+  const markedFluctuation = s("var_1") != null && s("var_1") >= 4;
   const crossContext = s("temp_3") != null && s("temp_3") >= 4;
   const contextDependent = s("temp_2") != null && s("temp_2") >= 4;
   const stablePattern = s("temp_1") != null && s("temp_1") <= 2;
+  const acuteOnset = s("temp_1") != null && s("temp_1") >= 4;
+  const interestBasedVariation = s("interest_var") != null && s("interest_var") >= 4;
+
+  // Trajectory
+  const traj = s("temp_4");
+  const homotypicTrait = traj === 1;
+  const heterotypicTraj = traj === 2;
+
+  // Capture / phenomenology / affect
   const externalCapture = s("dyn_capture") === 1;
   const internalCapture = s("dyn_capture") === 2;
   const emotionalCapture = s("dyn_capture") === 3;
@@ -219,91 +313,211 @@ function evaluatePathways(scores, sectionAvgs) {
   const crowded = s("dyn_phenom") === 3;
   const racing = s("dyn_phenom") === 4;
   const blank = s("dyn_phenom") === 5;
+  const overcontrolled = s("dyn_phenom") === 6;
+
+  // Subtype
+  const inattentiveSubtype = s("dyn_subtype") != null && s("dyn_subtype") <= 2;
+  const combinedSubtype = s("dyn_subtype") != null && s("dyn_subtype") >= 4;
+
+  // Content
+  const content = s("dyn_content");
+  const contentRumination = content === 1;
+  const contentIntrusion = content === 2;
+  const contentTrauma = content === 3;
+  const contentBizarre = content === 4;
+
+  // Tenacity / vigilance
   const lowTenacity = s("dyn_1") != null && s("dyn_1") <= 2;
   const lowVigilance = s("dyn_2") != null && s("dyn_2") <= 2;
   const reducedTenacity = s("dyn_1") != null && s("dyn_1") <= 2;
+
+  // Performance
   const timeOnTaskDecline = s("ctx_5") != null && s("ctx_5") <= 2;
   const perplexity = s("obs_6") != null && s("obs_6") <= 2;
   const disorientation = oriAvg !== null && oriAvg <= 2;
   const preservedTasks = taskAvg !== null && taskAvg >= 4;
   const lowEnergy = affectType === 1;
 
-  // ── Pathway F: Delirium (hard stop) ──
-  const pathF = {
-    id: 'F', label: 'Delirium / Global Impairment',
-    met: 0, total: 3, criteria: [],
-  };
-  if (lowTenacity && lowVigilance) { pathF.met++; pathF.criteria.push('Low tenacity + low vigilance'); }
-  if (disorientation) { pathF.met++; pathF.criteria.push('Disorientation'); }
-  if (perplexity) { pathF.met++; pathF.criteria.push('Perplexity'); }
+  // Medical mimic
+  const medMimic = s("med_mimic");
+  const hasMedMimic = medMimic != null && medMimic >= 1 && medMimic <= 4;
 
-  if (pathF.met >= 2) {
+  // ════════════════════════════════════════════════
+  // LAYER 1 — Urgent gates
+  // ════════════════════════════════════════════════
+
+  // ── Pathway F: Delirium (revised — fluctuation-aware) ──
+  const pathF = { id: 'F', label: 'Delirium / Acute Confusional State', criteria: [] };
+  pathF.criteria.push(buildCriterion('Acute onset', acuteOnset, 'anchor'));
+  pathF.criteria.push(buildCriterion('Marked within-session fluctuation', markedFluctuation, 'anchor'));
+  pathF.criteria.push(buildCriterion('Global tenacity+vigilance collapse', lowTenacity && lowVigilance, 'supporting'));
+  pathF.criteria.push(buildCriterion('Disorientation', disorientation, 'supporting'));
+  pathF.criteria.push(buildCriterion('Perplexity', perplexity, 'supporting'));
+  pathF.criteria.push(buildCriterion('Foggy/slowed phenomenology', foggySlowed, 'consistent'));
+  pathF.criteria.push(buildCriterion('Time-on-task decline', timeOnTaskDecline, 'consistent'));
+
+  const fScore = scorePathway(pathF.criteria);
+
+  if (fScore.anchorMet && fScore.score >= 5) {
     return {
-      primary: pathF,
+      primary: { id: 'F', label: pathF.label, met: fScore.met.length, total: pathF.criteria.length, criteria: fScore.met },
       isUrgent: true,
-      interpretation: "Pattern consistent with disturbance of consciousness (delirium until proven otherwise). The combination of global attentional collapse with disorientation and/or perplexity has high specificity for an organic confusional state.",
-      nextSteps: ["Immediate medical workup: metabolic panel, CBC, UA, vitals, O2 sat", "Formal delirium screening (CAM, DRS-R-98)", "Medication review — especially anticholinergic burden", "Assess for fluctuating course (hallmark of delirium)", "Do NOT attribute to psychiatric diagnosis without ruling out delirium first"],
+      interpretation: "Pattern consistent with disturbance of consciousness (delirium until proven otherwise). The combination of acute onset and/or marked fluctuation with attentional, perceptual, or orientation features has high specificity for an organic confusional state. Fluctuation is the cardinal feature — single-snapshot orientation testing can miss hyperactive or rapidly-cycling delirium.",
+      nextSteps: [
+        "Immediate medical workup: metabolic panel, CBC, UA, vitals, O2 sat",
+        "Formal delirium screening (CAM, 4AT, or DRS-R-98)",
+        "Medication review — anticholinergic burden, recent additions",
+        "Document fluctuating course (serial assessments over hours)",
+        "Do NOT attribute to psychiatric diagnosis without ruling out delirium first",
+      ],
       implication: "All other diagnostic considerations are deferred until delirium is excluded.",
       conflicts: [],
-      modifiers: pathF.criteria,
+      modifiers: fScore.met,
     };
   }
 
-  // ── Score all non-urgent pathways ──
+  // ── Pathway G: Medical mimic ──
+  if (hasMedMimic) {
+    const mimicLabels = {
+      1: 'OSA features identified',
+      2: 'Thyroid status unknown/abnormal',
+      3: 'Recent hormonal transition',
+      4: 'Post-viral cognitive symptoms',
+    };
+    const mimicNextSteps = {
+      1: ['Sleep study referral (STOP-BANG screen first)', 'CPAP if indicated — many "ADHD" cases resolve with treated OSA', 'Defer psychiatric attribution pending sleep workup'],
+      2: ['TSH, free T4, anti-TPO antibodies', 'Treat to euthyroid before attentional diagnosis', 'Both hyper- and hypothyroidism produce attentional symptoms'],
+      3: ['Hormonal panel as indicated', 'Consider HRT consultation', 'Estrogen withdrawal removes dopaminergic scaffolding — may unmask latent ADHD or produce de novo symptoms'],
+      4: ['Neurological consultation if symptoms persistent', 'Long COVID screen', 'Symptoms typically improve over months — serial reassessment'],
+    };
+    return {
+      primary: { id: 'G', label: 'Medical contributor identified', met: 1, total: 1, criteria: [mimicLabels[medMimic]] },
+      isUrgent: false,
+      isMedical: true,
+      interpretation: `${mimicLabels[medMimic]}. A medical contributor to attentional symptoms has been identified that requires workup before psychiatric attribution. Cognitive symptoms in this context may resolve fully with treatment of the underlying medical condition; diagnosing a primary psychiatric attentional disorder before this is addressed risks both mistreatment and delayed resolution of the actual cause.`,
+      nextSteps: mimicNextSteps[medMimic] || [],
+      implication: 'Primary attentional diagnosis should be deferred pending medical workup.',
+      conflicts: [],
+      modifiers: [mimicLabels[medMimic]],
+    };
+  }
+
+  // ════════════════════════════════════════════════
+  // LAYER 2 — Phenotype pathways (weighted)
+  // ════════════════════════════════════════════════
+
   const pathways = [];
 
-  // Pathway A: Trait ADHD-consistent
-  const pathA = { id: 'A', label: 'Stable trait attentional inefficiency (ADHD-consistent)', met: 0, total: 5, criteria: [] };
-  if (stablePattern) { pathA.met++; pathA.criteria.push('Stable/lifelong pattern'); }
-  if (lowVar) { pathA.met++; pathA.criteria.push('Low variability'); }
-  if (crossContext) { pathA.met++; pathA.criteria.push('Cross-context impairment'); }
-  if (externalCapture || taskAvoidance) { pathA.met++; pathA.criteria.push(externalCapture ? 'External distractibility' : 'Task avoidance'); }
-  if (weakAffect) { pathA.met++; pathA.criteria.push('Weak affective coupling'); }
-  pathways.push(pathA);
+  // ── Pathway A-I: ADHD Inattentive ──
+  const pathAI = { id: 'A-I', label: 'Stable trait inattentive pattern (ADHD-I consistent)', criteria: [] };
+  pathAI.criteria.push(buildCriterion('Stable/lifelong course', stablePattern, 'anchor'));
+  pathAI.criteria.push(buildCriterion('Cross-context impairment', crossContext, 'anchor'));
+  pathAI.criteria.push(buildCriterion('Predominantly inattentive subtype', inattentiveSubtype, 'supporting'));
+  pathAI.criteria.push(buildCriterion('Interest-based variation (hyperfocus capacity)', interestBasedVariation, 'supporting'));
+  pathAI.criteria.push(buildCriterion('Weak affective coupling', weakAffect, 'supporting'));
+  pathAI.criteria.push(buildCriterion('Low variability', lowVar, 'supporting'));
+  pathAI.criteria.push(buildCriterion('Homotypic trajectory (childhood → adult ADHD)', homotypicTrait, 'supporting'));
+  pathAI.criteria.push(buildCriterion('External distractibility or task avoidance', externalCapture || taskAvoidance, 'consistent'));
+  const aiScore = scorePathway(pathAI.criteria);
+  if (aiScore.anchorMet) {
+    pathways.push({ ...pathAI, score: aiScore.score, met: aiScore.met.length, total: pathAI.criteria.length, criteria: aiScore.met });
+  }
 
-  // Pathway B: State-dependent (non-ADHD)
-  const pathB = { id: 'B', label: 'State-dependent attentional impairment', met: 0, total: 4, criteria: [] };
-  if (highVar) { pathB.met++; pathB.criteria.push('High variability'); }
-  if (contextDependent) { pathB.met++; pathB.criteria.push('Strong context dependence'); }
-  if (timeOnTaskDecline) { pathB.met++; pathB.criteria.push('Time-on-task decline'); }
-  if (s("var_3") != null && s("var_3") >= 3 || s("var_4") != null && s("var_4") >= 3) { pathB.met++; pathB.criteria.push('High sleep/stress sensitivity'); }
-  pathways.push(pathB);
+  // ── Pathway A-C: ADHD Combined ──
+  const pathAC = { id: 'A-C', label: 'Stable trait combined pattern (ADHD-C consistent)', criteria: [] };
+  pathAC.criteria.push(buildCriterion('Stable/lifelong course', stablePattern, 'anchor'));
+  pathAC.criteria.push(buildCriterion('Cross-context impairment', crossContext, 'anchor'));
+  pathAC.criteria.push(buildCriterion('Combined subtype (prominent H/I)', combinedSubtype, 'anchor'));
+  pathAC.criteria.push(buildCriterion('Interest-based variation', interestBasedVariation, 'supporting'));
+  pathAC.criteria.push(buildCriterion('Racing thoughts (ADHD-pattern)', racing && !lowEnergy, 'supporting'));
+  pathAC.criteria.push(buildCriterion('Emotional dysregulation', strongAffect && (affectType === 2 || affectType === 3), 'supporting'));
+  pathAC.criteria.push(buildCriterion('Homotypic trajectory', homotypicTrait, 'supporting'));
+  pathAC.criteria.push(buildCriterion('External capture or impulsivity', externalCapture, 'consistent'));
+  const acScore = scorePathway(pathAC.criteria);
+  if (acScore.anchorMet) {
+    pathways.push({ ...pathAC, score: acScore.score, met: acScore.met.length, total: pathAC.criteria.length, criteria: acScore.met });
+  }
 
-  // Pathway C: Affective-driven
-  const pathC = { id: 'C', label: 'Affective-driven attentional instability', met: 0, total: 3, criteria: [] };
-  if (strongAffect) { pathC.met++; pathC.criteria.push('Strong affective coupling'); }
-  if (affectType === 2 || affectType === 3 || affectType === 4) { pathC.met++; pathC.criteria.push('Irritability/anxiety/agitation present'); }
-  if (highVar || internalCapture || emotionalCapture) { pathC.met++; pathC.criteria.push(highVar ? 'High variability' : emotionalCapture ? 'Emotional capture' : 'Internal capture'); }
-  pathways.push(pathC);
+  // ── Pathway B: State-dependent ──
+  const pathB = { id: 'B', label: 'State-dependent attentional impairment', criteria: [] };
+  pathB.criteria.push(buildCriterion('High variability', highVar, 'anchor'));
+  pathB.criteria.push(buildCriterion('Strong context dependence', contextDependent, 'anchor'));
+  pathB.criteria.push(buildCriterion('Time-on-task decline', timeOnTaskDecline, 'supporting'));
+  pathB.criteria.push(buildCriterion('Sleep sensitivity', s("var_3") != null && s("var_3") >= 3, 'supporting'));
+  pathB.criteria.push(buildCriterion('Stress sensitivity', s("var_4") != null && s("var_4") >= 3, 'supporting'));
+  pathB.criteria.push(buildCriterion('Identifiable triggers', s("ctx_triggers") != null && s("ctx_triggers") >= 2 && s("ctx_triggers") <= 6, 'consistent'));
+  const bScore = scorePathway(pathB.criteria);
+  if (bScore.anchorMet) {
+    pathways.push({ ...pathB, score: bScore.score, met: bScore.met.length, total: pathB.criteria.length, criteria: bScore.met });
+  }
 
-  // Pathway D: Internal preoccupation
-  const pathD = { id: 'D', label: 'Internal preoccupation pattern', met: 0, total: 3, criteria: [] };
-  if (internalCapture) { pathD.met++; pathD.criteria.push('Internal capture dominant'); }
-  if (crowded || s("dyn_phenom") === 6) { pathD.met++; pathD.criteria.push('Crowded/overcontrolled phenomenology'); }
-  if (preservedTasks) { pathD.met++; pathD.criteria.push('Preserved task performance'); }
-  pathways.push(pathD);
+  // ── Pathway C: Affective-driven ──
+  const pathC = { id: 'C', label: 'Affective-driven attentional instability', criteria: [] };
+  pathC.criteria.push(buildCriterion('Strong affective coupling', strongAffect, 'anchor'));
+  pathC.criteria.push(buildCriterion('Emotional/internal capture', emotionalCapture || internalCapture, 'supporting'));
+  pathC.criteria.push(buildCriterion('High variability tracking mood', highVar, 'supporting'));
+  pathC.criteria.push(buildCriterion('Phenomenology consistent with affect', (lowEnergy && (foggySlowed || blank)) || (affectType === 2 && (racing || scattered)) || (affectType === 4 && racing), 'supporting'));
+  pathC.criteria.push(buildCriterion('Heterotypic trajectory', heterotypicTraj, 'consistent'));
+  const cScore = scorePathway(pathC.criteria);
+  if (cScore.anchorMet) {
+    pathways.push({ ...pathC, score: cScore.score, met: cScore.met.length, total: pathC.criteria.length, criteria: cScore.met });
+  }
 
-  // Pathway E: Cognitive slowing / fatigue
-  const pathE = { id: 'E', label: 'Cognitive slowing / fatigue pattern', met: 0, total: 4, criteria: [] };
-  if (foggySlowed || blank) { pathE.met++; pathE.criteria.push(foggySlowed ? 'Foggy/slowed phenomenology' : 'Blank/disengaged phenomenology'); }
-  if (lowEnergy) { pathE.met++; pathE.criteria.push('Low energy affect'); }
-  if (reducedTenacity) { pathE.met++; pathE.criteria.push('Reduced tenacity'); }
-  if (lowVar) { pathE.met++; pathE.criteria.push('Low variability'); }
-  pathways.push(pathE);
+  // ── Pathway D: Internal preoccupation (content-aware) ──
+  const pathD = { id: 'D', label: 'Internal preoccupation pattern', criteria: [] };
+  pathD.criteria.push(buildCriterion('Internal capture dominant', internalCapture, 'anchor'));
+  pathD.criteria.push(buildCriterion('Preserved structured-task performance', preservedTasks, 'supporting'));
+  pathD.criteria.push(buildCriterion('Crowded or overcontrolled phenomenology', crowded || overcontrolled, 'supporting'));
+  pathD.criteria.push(buildCriterion('Identifiable internal content', content != null && content >= 1 && content <= 4, 'consistent'));
+  const dScore = scorePathway(pathD.criteria);
+  if (dScore.anchorMet) {
+    let subLabel = pathD.label;
+    if (contentIntrusion) subLabel = 'Internal preoccupation (OCD-spectrum)';
+    else if (contentRumination && lowEnergy) subLabel = 'Internal preoccupation (depressive rumination)';
+    else if (contentTrauma) subLabel = 'Internal preoccupation (trauma-related)';
+    else if (contentBizarre) subLabel = 'Internal preoccupation — bizarre/grandiose content (psychosis spectrum)';
+    pathways.push({ ...pathD, label: subLabel, score: dScore.score, met: dScore.met.length, total: pathD.criteria.length, criteria: dScore.met, contentBranch: content });
+  }
 
-  // Sort by proportion of criteria met (descending)
-  pathways.sort((a, b) => (b.met / b.total) - (a.met / a.total));
+  // ── Pathway E: Cognitive slowing / fatigue ──
+  const pathE = { id: 'E', label: 'Cognitive slowing / fatigue pattern', criteria: [] };
+  pathE.criteria.push(buildCriterion('Foggy/slowed or blank phenomenology', foggySlowed || blank, 'anchor'));
+  pathE.criteria.push(buildCriterion('Low-energy affect', lowEnergy, 'supporting'));
+  pathE.criteria.push(buildCriterion('Reduced tenacity', reducedTenacity, 'supporting'));
+  pathE.criteria.push(buildCriterion('Low variability (uniform impairment)', lowVar, 'supporting'));
+  const eScore = scorePathway(pathE.criteria);
+  if (eScore.anchorMet) {
+    pathways.push({ ...pathE, score: eScore.score, met: eScore.met.length, total: pathE.criteria.length, criteria: eScore.met });
+  }
 
+  if (pathways.length === 0) {
+    return null;
+  }
+
+  pathways.sort((a, b) => b.score - a.score);
   const primary = pathways[0];
-  const runner = pathways[1];
-  const hasEnoughData = primary.met >= 1;
+  const runner = pathways[1] || null;
 
-  if (!hasEnoughData) return null;
+  // ════════════════════════════════════════════════
+  // LAYER 3 — BRIDGE branch and interpretation
+  // ════════════════════════════════════════════════
 
-  // ── Build interpretation (case-specific, draws on actual computed features) ──
+  const mixedFeaturesRisk = (
+    affectType === 3 &&
+    highVar &&
+    stablePattern &&
+    (racing || crowded)
+  );
+
+  if (primary.id === 'C' && mixedFeaturesRisk) {
+    primary.label = 'Mixed-features spectrum (BRIDGE phenotype)';
+    primary.bridgePhenotype = true;
+  }
+
+  // ── Build interpretation ──
   const sleepSensitive = s("var_3") != null && s("var_3") >= 3;
   const stressSensitive = s("var_4") != null && s("var_4") >= 3;
-  const runnerNearMiss = runner && (runner.met / runner.total) >= 0.5;
+  const runnerNearMiss = runner && runner.score >= 5;
   const joinList = (arr, max) => {
     let items = arr.filter(Boolean);
     if (max) items = items.slice(0, max);
@@ -313,28 +527,39 @@ function evaluatePathways(scores, sectionAvgs) {
     return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
   };
 
-  const buildInterpretation = (id) => {
-    if (id === 'A') {
+  const buildInterpretation = (p) => {
+    const id = p.id;
+
+    if (id === 'A-I') {
       const findings = joinList([
         stablePattern && 'a stable, lifelong course',
         crossContext && 'impairment that crosses settings',
-        lowVar && 'low intra- and inter-session variability',
+        inattentiveSubtype && 'a predominantly inattentive presentation (no prominent hyperactivity)',
+        interestBasedVariation && 'preserved hyperfocus capacity for novel/rewarding tasks',
         weakAffect && 'attention that does not track mood state',
-        externalCapture && 'external distractibility',
-        taskAvoidance && !externalCapture && 'avoidance of effortful tasks',
-      ], 3);
+        lowVar && 'low intra- and inter-session variability',
+        homotypicTrait && 'a homotypic developmental trajectory (childhood → adult ADHD)',
+      ], 4);
       const preservedNote = preservedTasks
-        ? ' Structured tasks remain relatively preserved, which is consistent with ADHD’s typical dissociation between coercive testing and naturalistic functioning — capacity is intact when external scaffolding is high, and degrades as demands become self-directed.'
+        ? ' Structured tasks remain relatively preserved, consistent with ADHD\'s typical dissociation between coercive testing and naturalistic functioning.'
         : '';
-      let differential = '';
-      if (runnerNearMiss && runner.id === 'C') {
-        differential = ' Affective features are present but appear secondary; the trait architecture is preserved across mood states, which argues against a primarily affective driver.';
-      } else if (runnerNearMiss && runner.id === 'B') {
-        differential = ' Some state sensitivity was noted, but the lifelong course and low variability outweigh it and point at a fixed trait rather than a modifiable driver.';
-      } else if (runnerNearMiss && runner.id === 'E') {
-        differential = ' Slowing/fatigue features are present but do not by themselves explain the cross-context, lifelong picture.';
-      }
-      return `Pattern most consistent with trait attentional inefficiency (ADHD phenotype). The conclusion rests on ${findings || 'the configuration of trait features described above'}, which together argue against a state-driven explanation.${preservedNote}${differential}`;
+      const overlapNote = ' The inattentive presentation has notably less overlap with mood-spectrum cognition than the combined subtype, simplifying the differential.';
+      return `Pattern most consistent with trait inattentive ADHD (ADHD-I). The conclusion rests on ${findings || 'the configuration of trait inattentive features'}, with the diagnostic signature being lifelong inattention combined with weak affective coupling and capacity for interest-based hyperfocus.${preservedNote}${overlapNote}`;
+    }
+
+    if (id === 'A-C') {
+      const findings = joinList([
+        stablePattern && 'a stable, lifelong course',
+        crossContext && 'cross-context impairment',
+        combinedSubtype && 'prominent hyperactivity/impulsivity beyond inattention',
+        interestBasedVariation && 'interest-based attentional variation',
+        homotypicTrait && 'a homotypic developmental trajectory',
+      ], 4);
+      const racingNote = racing
+        ? ' Racing thoughts are present; per Bertschy et al. (2023) the lexical signature of ADHD-pattern racing (semantic wandering across distant concepts) differs from hypomanic racing (phonemic clustering), but this is hard to detect at bedside — collateral and longitudinal data are essential. Racing thoughts in this context are NOT pathognomonic of bipolarity.'
+        : '';
+      const overlapNote = ' Per Wilens et al. (2003) and Bertschy et al. (2023), combined-type ADHD shares substantial cognitive and behavioral overlap with mood-spectrum disorders — bipolarity screening is essential before stimulant treatment.';
+      return `Pattern most consistent with trait combined-type ADHD (ADHD-C). Findings include ${findings || 'the trait combined configuration described above'}.${racingNote}${overlapNote}`;
     }
 
     if (id === 'B') {
@@ -347,15 +572,11 @@ function evaluatePathways(scores, sectionAvgs) {
       const varNote = highVar
         ? ' The marked variability indicates a system that can attend when conditions allow, which is incompatible with a fixed trait deficit.'
         : '';
-      let differential = '';
-      if (runnerNearMiss && runner.id === 'A') {
-        differential = ' ADHD remains on the differential, but committing to a trait diagnosis is premature while modifiable drivers are unaddressed.';
-      } else if (runnerNearMiss && runner.id === 'C') {
-        differential = ' An affective contribution is plausible and may be one of the modifiable drivers worth characterizing.';
-      } else if (runnerNearMiss && runner.id === 'E') {
-        differential = ' Cognitive slowing features overlap, but the variability pattern argues for a state-dependent rather than uniformly throttled process.';
-      }
-      return `Pattern most consistent with state-dependent attentional impairment, with the principal driver(s) appearing to be ${driverPhrase}.${varNote} A fixed deficit is unlikely; addressing the modifiable factor(s) and reassessing should precede any trait diagnosis.${differential}`;
+      return `Pattern most consistent with state-dependent attentional impairment, with the principal driver(s) appearing to be ${driverPhrase}.${varNote} A fixed deficit is unlikely; addressing the modifiable factor(s) and reassessing should precede any trait diagnosis.`;
+    }
+
+    if (id === 'C' && p.bridgePhenotype) {
+      return `Pattern consistent with a mixed-features spectrum presentation per the BRIDGE-II-Mix framework (Vannucchi et al., 2019). The combination of lifelong inattentive features, irritable mood instability, marked variability, and ${racing ? 'racing' : 'crowded'} cognitive phenomenology is the high-risk constellation for antidepressant-induced switches into mania, hypomania, or mixed states. Critically, antidepressant monotherapy is contraindicated in this profile — a mood stabilizer should precede any stimulant or antidepressant trial. Longitudinal mood characterization (≥4 weeks) and Angst-criteria bipolarity screening take priority over confirming ADHD.`;
     }
 
     if (id === 'C') {
@@ -365,63 +586,58 @@ function evaluatePathways(scores, sectionAvgs) {
         internalCapture && 'capture by internal mental content',
         highVar && 'marked variability that tracks emotional state',
         contextDependent && 'context-sensitive performance',
+        heterotypicTraj && 'a heterotypic developmental trajectory (childhood ADHD → adult mood episodes)',
       ], 3);
       const supportSentence = supports
         ? `Supporting findings include ${supports}.`
         : `The decision rests on the strong coupling between affect and attention noted in the dynamics section.`;
-      const adhdRunnerNote = (runnerNearMiss && runner.id === 'A')
-        ? ' Trait inattention was a near-miss alternative, but the attentional failure waxes and wanes with mood rather than presenting as a fixed deficit, which argues against committing to ADHD before the affective state is treated.'
-        : '';
 
       if (affectType === 1) {
         const phenomBit = foggySlowed
           ? ' The foggy/slowed phenomenology paired with low-energy affect is a depressive cognitive signature rather than primary inattention.'
           : ' The low-energy affective profile points at a depressive cognitive process rather than primary inattention.';
-        return `Attentional disturbance appears secondary to a depressive process; cognitive engagement is throttled downstream of mood rather than failing intrinsically. ${supportSentence}${phenomBit} Effective antidepressant treatment is the primary intervention — attentional complaints typically remit with mood recovery, and a stimulant trial before that risks treating an epiphenomenon.${adhdRunnerNote}`;
+        return `Attentional disturbance appears secondary to a depressive process; cognitive engagement is throttled downstream of mood rather than failing intrinsically. ${supportSentence}${phenomBit} Effective antidepressant treatment is the primary intervention — attentional complaints typically remit with mood recovery, and a stimulant trial before that risks treating an epiphenomenon.`;
       }
       if (affectType === 2) {
         const phenomBit = (racing || scattered)
           ? ` ${racing ? 'Racing' : 'Scattered'} phenomenology is consistent with anxious cognitive overactivation rather than under-arousal.`
           : '';
-        return `Attentional disturbance appears secondary to anxiety; working memory is hijacked by worry and threat-monitoring rather than failing intrinsically. ${supportSentence}${phenomBit} Anxiety treatment (SSRI, CBT, or anxiolytic) should precede an ADHD work-up — the distinguishing feature is that anxious inattention carries distress about failing, whereas trait inattention more often presents with frustration or indifference.${adhdRunnerNote}`;
+        return `Attentional disturbance appears secondary to anxiety; working memory is hijacked by worry and threat-monitoring rather than failing intrinsically. ${supportSentence}${phenomBit} Anxiety treatment (SSRI, CBT, or anxiolytic) should precede an ADHD work-up.`;
       }
       if (affectType === 3) {
-        const phenomBit = blank
-          ? ' Blank/disengaged phenomenology in the setting of dysphoric activation is particularly suggestive of a mixed depressive state, in which over-aroused negative affect coexists with cognitive shutdown.'
-          : ' The combination of negative affect and irritable arousal is suggestive of a mixed or dysphoric mood episode rather than unipolar depression alone.';
-        return `Attentional disturbance appears driven by a mixed/dysphoric affective state in which irritability and negative arousal disrupt sustained attention. ${supportSentence}${phenomBit} This presentation can mimic ADHD strikingly — irritability plus inattention is a classic mixed-features look — but a stimulant before mood characterization risks worsening dysphoria; longitudinal data and consideration of a mood stabilizer are preferable first steps.${adhdRunnerNote}`;
+        return `Attentional disturbance appears driven by an irritable/dysphoric affective state in which negative arousal disrupts sustained attention. ${supportSentence} This presentation can mimic ADHD strikingly — irritability plus inattention is a classic mixed-features look — but a stimulant before mood characterization risks worsening dysphoria; longitudinal data and consideration of a mood stabilizer are preferable first steps.`;
       }
       if (affectType === 4) {
         const phenomBit = racing
           ? ' Racing phenomenology raises specific concern for hypomanic-spectrum cognition rather than primary inattention.'
           : ' The activated affective profile raises concern for hypomanic-spectrum cognition rather than primary inattention.';
-        return `Attentional disturbance appears driven by affective activation; the system is over-aroused and disorganized rather than under-attentive. ${supportSentence}${phenomBit} A bipolar-spectrum work-up (history of mood elevation, decreased need for sleep) is essential before any stimulant consideration, which could destabilize an underlying mood disorder; mood stabilization comes first.${adhdRunnerNote}`;
+        return `Attentional disturbance appears driven by affective activation; the system is over-aroused and disorganized rather than under-attentive. ${supportSentence}${phenomBit} A bipolar-spectrum work-up is essential before any stimulant consideration; mood stabilization comes first.`;
       }
-      return `Attentional disturbance appears secondary to affective dysregulation. ${supportSentence} Characterizing the affective state more precisely is the next step before any trait attribution.${adhdRunnerNote}`;
+      return `Attentional disturbance appears secondary to affective dysregulation. ${supportSentence} Characterizing the affective state more precisely is the next step before any trait attribution.`;
     }
 
     if (id === 'D') {
       const supports = joinList([
         internalCapture && 'attention dominantly captured by internal content',
         preservedTasks && 'preserved performance on structured tasks (capacity is intact)',
-        crowded && 'crowded/overcontrolled phenomenology',
-        racing && 'a racing thought stream',
-        blank && 'episodes of blank disengagement',
+        crowded && 'crowded phenomenology',
+        overcontrolled && 'overcontrolled phenomenology',
       ], 3);
-      let contentHypothesis;
-      if (crowded) {
-        contentHypothesis = 'The crowded, overcontrolled quality is most suggestive of obsessive-compulsive content (intrusive, ego-dystonic, resisted) or trauma-related re-experiencing rather than ordinary worry.';
-      } else if (racing) {
-        contentHypothesis = 'A racing thought stream points at anxious rumination, hypomanic-spectrum activation, or stimulant-related cognition; the differential narrows on whether the content is goal-driven or worry-driven.';
-      } else if (blank) {
-        contentHypothesis = 'Blank/disengaged episodes raise the possibility of dissociation, absence-like phenomena, or severe ruminative withdrawal rather than a typical preoccupation.';
+      let contentNarrative;
+      if (contentIntrusion) {
+        contentNarrative = 'The content is ego-dystonic, resisted, and intrusive — characteristic of OCD-spectrum disorders. The therapeutic target is the intrusions themselves through ERP-based therapy and SSRI at OCD-range doses; the attention system is intact and does not need direct treatment.';
+      } else if (contentRumination && lowEnergy) {
+        contentNarrative = 'The content is ego-syntonic ruminative thought paired with low-energy affect — characteristic of depressive rumination. Mood-first treatment is the appropriate target; attentional complaints typically remit with mood recovery.';
+      } else if (contentRumination) {
+        contentNarrative = 'The content is ego-syntonic worry/rumination, suggesting GAD or rumination-prone mood states. The treatment target is the ruminative content, not the attention system.';
+      } else if (contentTrauma) {
+        contentNarrative = 'Trauma-related re-experiencing is the dominant content. Trauma-focused therapy (CPT, PE, EMDR) is the appropriate target; intrusions in this context should NOT be attributed to ADHD distractibility.';
+      } else if (contentBizarre) {
+        contentNarrative = 'Bizarre or grandiose content raises concern for psychosis-spectrum preoccupation. Psychosis workup, antipsychotic trial consideration, and differentiation from severe OCD with poor insight are the clinical priorities.';
       } else {
-        contentHypothesis = 'The most likely content is ruminative depressive thought or generalized worry; if the material is bizarre or ego-syntonic, psychotic-spectrum preoccupation should be considered.';
+        contentNarrative = 'The content has not been characterized; probe whether the material is ego-syntonic worry, ego-dystonic intrusion, trauma-related, or bizarre to narrow the differential.';
       }
-      const preservedClause = preservedTasks
-        ? ' Preserved structured-task performance reinforces that capacity is not the problem — attention is being spent elsewhere.'
-        : '';
-      return `Apparent inattention reflects internal attentional capture rather than a primary attentional deficit; capacity is intact but redirected. ${supports ? `Supporting findings include ${supports}. ` : ''}${contentHypothesis}${preservedClause} The therapeutic target is the absorbing content (OCD, rumination, PTSD intrusions, psychosis) rather than the attention system itself.`;
+      return `Apparent inattention reflects internal attentional capture rather than a primary attentional deficit; capacity is intact but redirected. ${supports ? `Supporting findings include ${supports}. ` : ''}${contentNarrative}`;
     }
 
     if (id === 'E') {
@@ -432,9 +648,9 @@ function evaluatePathways(scores, sectionAvgs) {
       ], 3);
       let mechanism;
       if (foggySlowed && !blank) {
-        mechanism = 'The foggy/slowed quality combined with low energy points most strongly at a depressive or anhedonic cognitive process — the system is engaged but throttled.';
+        mechanism = 'Foggy/slowed phenomenology paired with low energy is a depressive cognitive signature or points at medical contributors (thyroid, B12, sleep-disordered breathing) — the system is engaged but throttled.';
       } else if (blank && !foggySlowed) {
-        mechanism = 'Blank/disengaged phenomenology — distinct from cognitive fog — points more toward a sedating-medication effect, a primary medical process (thyroid, B12, sleep-disordered breathing), or anhedonic withdrawal, rather than effortful slowing.';
+        mechanism = 'Blank/disengaged phenomenology — distinct from cognitive fog — points more toward severe depression, sedation (medication burden), or dissociation rather than effortful slowing.';
       } else if (foggySlowed && blank) {
         mechanism = 'Mixed foggy and blank phenomenology suggests a heavily sedating contributor — medication burden, untreated sleep-disordered breathing, or severe depression — rather than a single mechanism.';
       } else {
@@ -446,65 +662,146 @@ function evaluatePathways(scores, sectionAvgs) {
     return '';
   };
 
-  const interpretation = buildInterpretation(primary.id);
+  const interpretation = buildInterpretation(primary);
 
+  // ── Next steps ──
   const nextStepsMap = {
-    A: ["Confirm childhood onset with collateral if possible", "Confirm cross-setting impairment (work, home, social)", "Assess functional consequences and adaptive strategies", "Consider stimulant or non-stimulant trial"],
-    B: ["Identify primary driver: sleep, stress, medical, or medication", "Do NOT diagnose ADHD at this time", "Address modifiable state factors first", "Reassess attentional profile after stabilization"],
-    C: [],
-    D: ["Assess for OCD (intrusive, ego-dystonic content)", "Screen for ruminative depression or GAD", "Evaluate for trauma-related intrusions (PTSD)", "Consider psychosis spectrum if content is bizarre or ego-syntonic", "Target the absorbing content, not the attention system"],
-    E: ["Screen for depression (PHQ-9, clinical interview)", "Review sleep hygiene and sleep disorders", "Medical workup: thyroid, B12, metabolic panel", "Medication review — sedating agents, anticholinergics"],
+    'A-I': [
+      "Confirm childhood onset with collateral if possible",
+      "Confirm cross-setting impairment (work, home, social)",
+      "Document functional consequences and adaptive strategies",
+      "Consider stimulant or non-stimulant trial",
+    ],
+    'A-C': [
+      "Confirm childhood onset with collateral",
+      "Detailed bipolarity history (per Wilens 2003 — ADHD-C has elevated BD comorbidity)",
+      "Screen for hypomanic episodes (Angst bipolarity specifier, not just DSM BD-I/II)",
+      "Family history of bipolar disorder",
+      "If racing thoughts present: distinguish ADHD-pattern (semantic wandering) from hypomanic (phonemic clustering) — collateral and longitudinal data help",
+      "Consider treatment of mood comorbidity before or alongside stimulant trial",
+    ],
+    'B': [
+      "Identify primary driver: sleep, stress, medical, or medication",
+      "Do NOT diagnose ADHD at this time",
+      "Address modifiable state factors first",
+      "Reassess attentional profile after stabilization",
+    ],
+    'C-BRIDGE': [
+      "Detailed bipolarity screen using Angst bipolarity specifier (not just DSM BD-I/II)",
+      "Family history of bipolar disorder",
+      "Detailed history of antidepressant-induced activation, irritability, or mood switches",
+      "Mood stabilizer should precede stimulant trial",
+      "Consider longitudinal mood charting (≥4 weeks) before treatment decisions",
+      "Per BRIDGE-II-Mix: this constellation predicts AD-induced switches — antidepressant monotherapy is high-risk",
+    ],
+    'D-OCD': [
+      "Y-BOCS or similar OCD severity assessment",
+      "ERP-based therapy referral",
+      "SSRI trial at OCD-range doses",
+      "The attention system is intact — target the intrusions",
+    ],
+    'D-DepRum': [
+      "Standard depression workup (PHQ-9, full mood interview)",
+      "Treat depression — attentional complaints typically remit with mood recovery",
+      "Reassess attention after mood stabilization",
+    ],
+    'D-PTSD': [
+      "Trauma history and PTSD screening (PCL-5)",
+      "Trauma-focused therapy referral",
+      "Avoid attributing intrusions to ADHD distractibility",
+    ],
+    'D-Psychotic': [
+      "Detailed psychotic symptom inventory",
+      "Consider antipsychotic trial",
+      "Differentiate from severe OCD with poor insight",
+      "Neurological workup if first episode in atypical age range",
+    ],
+    'E': [
+      "Screen for depression (PHQ-9, clinical interview)",
+      "Sleep hygiene and sleep disorder review (revisit OSA screen)",
+      "Medical workup: thyroid, B12, metabolic panel",
+      "Medication review — sedating agents, anticholinergics",
+    ],
   };
 
-  // Pathway C sub-branching for next-steps (interpretation handles its own affect-aware branching)
-  if (primary.id === 'C') {
-    const subBranchSteps = {
-      1: ["Treat depression first", "Attentional complaints often resolve with effective antidepressant treatment", "Reassess attention after mood stabilization"],
-      2: ["Treat anxiety first — anxiolytic or SSRI", "Differentiate from ADHD: anxious inattention has distress about failure; ADHD-pattern has frustration", "Reassess attention after anxiety management"],
-      3: ["Evaluate for mixed features (DSM-5 specifier)", "Mood stabilizer may be indicated before stimulant consideration", "Irritability + inattention mimics ADHD — do not diagnose without longitudinal data"],
-      4: ["Assess for mania/hypomania history", "Check sleep patterns — decreased need is a red flag", "Stimulants are contraindicated if bipolar is suspected", "Mood stabilizer first"],
-    };
-    nextStepsMap.C = subBranchSteps[affectType] || ["Characterize the affective state more precisely", "Treat mood/anxiety before attributing to ADHD"];
-  }
+  const getNextSteps = (p) => {
+    if (p.id === 'C' && p.bridgePhenotype) return nextStepsMap['C-BRIDGE'];
+    if (p.id === 'C') {
+      const subBranchSteps = {
+        1: ["Treat depression first", "Attentional complaints often resolve with effective antidepressant treatment", "Reassess attention after mood stabilization"],
+        2: ["Treat anxiety first — anxiolytic or SSRI", "Differentiate from ADHD: anxious inattention has distress about failure; ADHD-pattern has frustration", "Reassess attention after anxiety management"],
+        3: ["Evaluate for mixed features (DSM-5 specifier)", "Mood stabilizer may be indicated before stimulant consideration", "Irritability + inattention mimics ADHD — do not diagnose without longitudinal data"],
+        4: ["Assess for mania/hypomania history", "Check sleep patterns — decreased need is a red flag", "Stimulants are contraindicated if bipolar is suspected", "Mood stabilizer first"],
+      };
+      return subBranchSteps[affectType] || ["Characterize the affective state more precisely", "Treat mood/anxiety before attributing to ADHD"];
+    }
+    if (p.id === 'D') {
+      if (contentIntrusion) return nextStepsMap['D-OCD'];
+      if (contentRumination && lowEnergy) return nextStepsMap['D-DepRum'];
+      if (contentRumination) return nextStepsMap['D-DepRum'];
+      if (contentTrauma) return nextStepsMap['D-PTSD'];
+      if (contentBizarre) return nextStepsMap['D-Psychotic'];
+      return ["Characterize the internal content (intrusion vs. rumination vs. trauma vs. bizarre) before treatment", "Target the absorbing content, not the attention system"];
+    }
+    return nextStepsMap[p.id] || [];
+  };
 
   // ── Conflict detection ──
   const conflicts = [];
 
-  // ADHD + high variability
-  if (primary.id === 'A' && highVar) {
+  if ((primary.id === 'A-I' || primary.id === 'A-C') && highVar) {
     conflicts.push({
-      label: "ADHD + High Variability",
-      text: "ADHD diagnosis is uncertain due to elevated attentional variability, which is atypical for a purely trait-based disorder. High variability suggests a state-dependent component that should be evaluated before attributing to ADHD.",
+      label: 'Trait pattern with elevated variability',
+      text: 'High variability is atypical for a purely trait-based attentional disorder. Consider whether a state-dependent component is contributing — sleep, mood, or stress factors may need to be addressed before committing to an ADHD diagnosis.',
     });
   }
 
-  // Good tasks + poor real-world (observation)
   if (preservedTasks && obsAvg !== null && obsAvg <= 2.5) {
     conflicts.push({
-      label: "Task–Function Discrepancy",
-      text: "Structured task performance exceeds real-world functioning (observation). Consider: hot EF impairment (intact cool EF, impaired under emotional load), affective interference in naturalistic contexts, or environmental/contextual drivers that structured testing doesn't capture.",
+      label: 'Task–Function Discrepancy',
+      text: "Structured task performance exceeds real-world functioning. Consider: hot EF impairment (intact cool EF, impaired under emotional load), affective interference in naturalistic contexts, or environmental drivers that structured testing doesn't capture.",
     });
   }
 
-  // Poor tasks + intact observation
   if (taskAvg !== null && taskAvg <= 2.5 && obsAvg !== null && obsAvg >= 3.5) {
     conflicts.push({
-      label: "Testing Artifact Possible",
-      text: "Formal testing may underestimate true function. The patient performs worse on structured tasks than in natural conversation. Consider: test anxiety, effort/motivation issues, the 'experimental condition' effect, or specific cognitive deficits (working memory, processing speed) that structured tasks expose.",
+      label: 'Testing Artifact Possible',
+      text: "Formal testing underestimates function relative to natural conversation. Consider: test anxiety, effort issues, the 'experimental condition' effect, or specific cognitive deficits exposed by structured tasks.",
     });
   }
 
-  // Affective + ADHD competition
-  if (primary.id === 'A' && runner && runner.id === 'C' && runner.met >= 2) {
+  if ((primary.id === 'A-I' || primary.id === 'A-C') && taskAvg != null && taskAvg >= 4 && obsAvg != null && obsAvg >= 4) {
     conflicts.push({
-      label: "ADHD vs. Affective Overlap",
-      text: "Both ADHD-pattern and affective-driven patterns have significant support. The presence of strong affective coupling argues against a pure ADHD interpretation. Consider: comorbid ADHD + mood disorder, or affective disorder mimicking ADHD. Longitudinal assessment after mood stabilization is recommended before diagnosing ADHD.",
+      label: 'Self-reported trait pattern with intact testing and observation',
+      text: 'The patient reports trait inattention but performs well on structured tasks AND shows no observable inattention. Three possibilities: (1) genuine ADHD where structured-test demands provide scaffolding that masks naturalistic dysfunction — verify functional impairment in high-demand naturalistic contexts; (2) over-reporting or symptom amplification; (3) anxiety-related cognitive complaints reflecting distress rather than attentional capacity. Collateral history is essential before diagnosing.',
+    });
+  }
+
+  if ((primary.id === 'A-I' || primary.id === 'A-C') && acuteOnset) {
+    conflicts.push({
+      label: 'Apparent trait pattern with non-stable course',
+      text: 'Trait-consistent features are present, but the course is acute or progressive rather than lifelong. ADHD diagnostic criteria require onset before age 12. Adult-onset attentional symptoms with otherwise ADHD-like features should prompt workup for: medical contributors (revisit medical mimic screen), mood disorder, neurocognitive decline, or substance effects — NOT a primary ADHD diagnosis.',
+    });
+  }
+
+  if (primary.id === 'A-C' && (racing || affectType === 4)) {
+    conflicts.push({
+      label: 'ADHD-Combined pattern with hypomanic-spectrum features',
+      text: 'The combined-ADHD pattern overlaps substantially with hypomanic-spectrum cognition. Per Bertschy et al. (2023), the lexical signature differs — semantic wandering across distant concepts in ADHD vs. phonemic associations (rhymes, puns) in hypomania — but this is difficult to detect at bedside. Per Wilens et al. (2003), ADHD+BD-II is the most common comorbidity pattern. Before any stimulant trial: detailed bipolarity history (Angst specifier), decreased need for sleep, family history of BD, and any prior antidepressant-induced activation.',
+    });
+  }
+
+  if ((primary.id === 'A-I' || primary.id === 'A-C') && heterotypicTraj) {
+    conflicts.push({
+      label: 'ADHD pattern with heterotypic developmental trajectory',
+      text: 'Childhood ADHD with emergence of adult mood episodes (heterotypic trajectory per Faedda) suggests this may be a distinct ADHD-BD comorbid phenotype rather than pure ADHD. Per Comparelli et al. (2022), this constellation has different treatment implications than ADHD without mood-spectrum evolution. Consider mood characterization before or alongside ADHD treatment.',
     });
   }
 
   // ── Build modifiers list ──
   const modifiers = [];
   if (highVar) modifiers.push("Marked variability");
+  if (markedFluctuation) modifiers.push("Within-session fluctuation");
   if (strongAffect) modifiers.push("Strong affective coupling");
   if (internalCapture) modifiers.push("Internal attentional capture");
   if (externalCapture) modifiers.push("External distractibility");
@@ -512,30 +809,42 @@ function evaluatePathways(scores, sectionAvgs) {
   if (taskAvoidance) modifiers.push("Task avoidance pattern");
   if (timeOnTaskDecline) modifiers.push("Time-on-task decline");
   if (contextDependent) modifiers.push("State-dependent");
+  if (interestBasedVariation) modifiers.push("Interest-based variation");
+  if (combinedSubtype) modifiers.push("Combined H/I subtype");
+  if (heterotypicTraj) modifiers.push("Heterotypic trajectory");
+  if (homotypicTrait) modifiers.push("Homotypic trajectory");
+
   const phenom = s("dyn_phenom");
   const phenomLabels = { 1: "Foggy/slowed", 2: "Scattered", 3: "Crowded", 4: "Racing", 5: "Blank/disengaged", 6: "Overcontrolled" };
   if (phenom && phenomLabels[phenom]) modifiers.push(phenomLabels[phenom] + " phenomenology");
 
-  // ADHD implication
+  if (content && content >= 1 && content <= 4) {
+    const contentLabels = { 1: "Ruminative content", 2: "Intrusive content", 3: "Trauma content", 4: "Bizarre content" };
+    modifiers.push(contentLabels[content]);
+  }
+
+  // ── Implication ──
   let implication = "";
-  if (primary.id === 'A' && conflicts.length === 0) {
+  if ((primary.id === 'A-I' || primary.id === 'A-C') && conflicts.length === 0) {
     implication = "Findings are consistent with ADHD. Proceed with confirmatory evaluation.";
-  } else if (primary.id === 'A' && conflicts.length > 0) {
-    implication = "ADHD is possible but conflicts exist. Address the flagged issues before diagnosing.";
-  } else if (primary.id !== 'A') {
+  } else if ((primary.id === 'A-I' || primary.id === 'A-C') && conflicts.length > 0) {
+    implication = "ADHD pattern present but conflicts exist. Address the flagged issues before diagnosing.";
+  } else if (primary.bridgePhenotype) {
+    implication = "Mood-spectrum characterization is the priority. Stimulant monotherapy is contraindicated until mood is stabilized.";
+  } else if (primary.id !== 'A-I' && primary.id !== 'A-C') {
     implication = "ADHD diagnosis should be deferred pending resolution of the identified attentional driver.";
   }
 
   return {
-    primary,
-    runner: runner && runner.met >= 1 ? runner : null,
+    primary: { id: primary.id, label: primary.label, met: primary.met, total: primary.total, criteria: primary.criteria, bridgePhenotype: primary.bridgePhenotype },
+    runner: runner ? { id: runner.id, label: runner.label, met: runner.met, total: runner.total, criteria: runner.criteria } : null,
     isUrgent: false,
     interpretation,
-    nextSteps: nextStepsMap[primary.id],
+    nextSteps: getNextSteps(primary),
     implication,
     conflicts,
     modifiers,
-    allPathways: pathways,
+    allPathways: pathways.map(p => ({ id: p.id, label: p.label, met: p.met, total: p.total, score: p.score })),
   };
 }
 
@@ -872,8 +1181,35 @@ function AttentionAssessment() {
   const deliriumTriad = checkDeliriumTriad();
   const tvPattern = getTenacityVigilancePattern();
 
-  // Diagnostic pathway engine
-  const pathwayResult = Object.keys(scores).length >= 5 ? evaluatePathways(scores, sectionAvgs) : null;
+  // Diagnostic pathway engine — minimum data gate
+  const minDataMet = (
+    scores["temp_1"] != null &&
+    Object.keys(scores).filter(k => k.startsWith('obs_')).length >= 2 &&
+    Object.keys(scores).filter(k => k.startsWith('dyn_')).length >= 3
+  );
+  const pathwayResult = minDataMet ? evaluatePathways(scores, sectionAvgs) : null;
+
+  const PATTERN_CHIPS = [
+    "Stable trait inattentive pattern (ADHD-I consistent)",
+    "Stable trait combined pattern (ADHD-C consistent)",
+    "State-dependent attentional impairment",
+    "Affective-driven attentional instability",
+    "Mixed-features spectrum (BRIDGE phenotype)",
+    "Internal preoccupation (OCD-spectrum)",
+    "Internal preoccupation (depressive rumination)",
+    "Internal preoccupation (trauma-related)",
+    "Cognitive slowing / fatigue pattern",
+    "Medical contributor identified",
+    "Mixed / unclear",
+  ];
+
+  // Auto-suggest pattern classification chip when engine output matches a chip
+  const suggestedLabel = pathwayResult ? pathwayResult.primary.label : null;
+  useEffect(() => {
+    if (suggestedLabel && PATTERN_CHIPS.includes(suggestedLabel) && !formulation.patternClass) {
+      setFormulation(prev => ({ ...prev, patternClass: suggestedLabel }));
+    }
+  }, [suggestedLabel]);
 
   // Check if temporal section is filled (gate for interpretation)
   const temporalFilled = scores["temp_1"] != null && scores["temp_2"] != null;
@@ -894,9 +1230,14 @@ function AttentionAssessment() {
     // Structured pathway output
     if (pathwayResult) {
       lines.push(hr);
-      lines.push(pathwayResult.isUrgent ? "⚠ URGENT — ATTENTIONAL PROFILE" : "ATTENTIONAL PROFILE");
+      let header;
+      if (pathwayResult.isUrgent) header = "⚠ URGENT — ATTENTIONAL PROFILE";
+      else if (pathwayResult.isMedical) header = "MEDICAL CONTRIBUTOR — ATTENTIONAL PROFILE";
+      else header = "ATTENTIONAL PROFILE";
+      lines.push(header);
       lines.push(hr);
-      lines.push(`Primary Pattern: ${pathwayResult.primary.label}`);
+      const bridgeTag = pathwayResult.primary.bridgePhenotype ? " [BRIDGE phenotype]" : "";
+      lines.push(`Primary Pattern: ${pathwayResult.primary.label}${bridgeTag}`);
       if (pathwayResult.modifiers.length > 0) lines.push(`Modifiers: ${pathwayResult.modifiers.join(", ")}`);
       lines.push("");
       lines.push("INTERPRETATION");
@@ -1122,24 +1463,13 @@ function AttentionAssessment() {
                     </div>
                   )}
 
-                  {/* All pathway scores */}
-                  {!pathwayResult.isUrgent && pathwayResult.allPathways && (
-                    <div className="dx-pathway-grid">
-                      {pathwayResult.allPathways.map(pw => (
-                        <div className={`dx-pw-card ${pw.id === pathwayResult.primary.id ? 'best' : ''}`} key={pw.id}>
-                          <div className="pw-label">{pw.id}</div>
-                          <div className="pw-score" style={{ color: pw.met > 0 ? 'var(--c-accent)' : 'var(--c-text-muted)' }}>{pw.met}/{pw.total}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (
               <div className="narrative-profile" style={{ borderColor: 'var(--c-border)', background: 'var(--c-bg)' }}>
                 <div className="profile-label" style={{ color: 'var(--c-text-muted)' }}>Attentional Profile</div>
                 <div className="profile-text" style={{ color: 'var(--c-text-muted)', fontWeight: 400, fontSize: '0.85rem' }}>
-                  Rate items across sections to generate the diagnostic pathway. The engine evaluates your scores against six clinical pathways and produces a structured interpretation.
+                  Complete at least: temporal course (temp_1), 2 observation items, and 3 dynamics items to enable the diagnostic engine.
                 </div>
               </div>
             )}
@@ -1243,14 +1573,7 @@ function AttentionAssessment() {
               </div>
               {!temporalFilled && <div className="gate-required" style={{ marginBottom: 8 }}>Complete the Temporal Pattern section for best results.</div>}
               <div className="form-options">
-                {[
-                  "Stable trait attentional inefficiency (ADHD-consistent)",
-                  "State-dependent attentional impairment",
-                  "Affective-driven attentional instability",
-                  "Fatigue / cognitive slowing pattern",
-                  "Internal preoccupation pattern",
-                  "Mixed / unclear",
-                ].map(opt => (
+                {PATTERN_CHIPS.map(opt => (
                   <button key={opt}
                     className={`form-chip ${formulation.patternClass === opt ? "form-chip-active" : ""}`}
                     onClick={() => updateFormulation("patternClass", formulation.patternClass === opt ? "" : opt)}>
