@@ -76,19 +76,6 @@ const SECTIONS = [
         ],
         administration: "Per Comparelli et al. (2022) and Faedda's heterotypic trajectory framework, the developmental sequence has diagnostic weight beyond simple course. Probe: 'Were you identified as having attention problems as a child?' 'When did mood symptoms first appear relative to attention symptoms?' 'Did mood episodes start in adolescence or later?' Heterotypic trajectory (childhood ADHD → adult mood episodes) suggests a distinct clinical phenotype with implications for treatment sequencing.",
       },
-      {
-        id: "interest_var",
-        text: "Interest-based attentional variation — capacity for hyperfocus on novel/rewarding tasks",
-        isQualitative: true,
-        anchors: [
-          "No hyperfocus capacity",
-          "Mild differential by interest",
-          "Moderate — better focus on preferred activities",
-          "Marked — can hyperfocus on novel/rewarding, blocked on routine",
-          "Extreme — hyperfocus dominates, cannot disengage",
-        ],
-        administration: "Probe: 'Are there things you can focus on for hours without difficulty? What's different about those activities versus the ones you struggle with?' The pattern of being able to hyperfocus on novel, rewarding, or self-selected tasks while being completely blocked by routine, low-reward, or other-imposed tasks is a strong ADHD signal — distinct from generalized attentional deficits seen in mood disorders, where focus is impaired across the board including on previously enjoyable activities.",
-      },
     ],
   },
   {
@@ -154,6 +141,19 @@ const SECTIONS = [
           "Cannot characterize / patient cannot articulate",
         ],
         administration: "If the patient endorses internal attentional capture (per dyn_capture), characterize the content. Probe: 'When your mind is captured by these thoughts, do they feel like *your* thoughts that you're stuck on, or do they feel intrusive — unwanted, that you'd push away if you could?' 'Are they connected to past events you keep returning to?' Differentiates the treatment target: rumination → mood/anxiety treatment; intrusions → OCD/trauma; bizarre content → psychosis workup.",
+      },
+      {
+        id: "engagement_pattern",
+        text: "Task engagement / disengagement pattern (non-diagnostic — for formulation only)",
+        isQualitative: true,
+        anchors: [
+          "No notable variation by task type",
+          "Mild differential by interest or reward",
+          "Moderate — better engagement with preferred activities",
+          "Marked task immersion with difficulty disengaging from preferred activities",
+          "Extreme — prolonged immersion that interferes with daily functioning",
+        ],
+        administration: "Probe: 'Are there activities you become very absorbed in — to the point of losing track of time, missing meals, or having trouble stopping?' 'What kinds of activities? What's different about them compared to ones you struggle to start?' This pattern (sometimes called 'hyperfocus' in clinical lore) is described by patients across multiple conditions including ADHD, autism, AuDHD, and OCD-spectrum, as well as in nonclinical contexts. Per Groen et al. (2020), case-control comparisons do not show ADHD specificity for this pattern. Per Ayers-Glassey & Smilek (2024), it correlates more strongly with perseveration and emotion dysregulation than with classic flow. **This item is for clinical formulation and management planning (transition routines, screen-time structure, external stopping cues). It does NOT contribute to pathway scoring and should not be used as a diagnostic discriminator.** Functional consequences (gaming/screen overuse, neglect of basic needs, missed transitions) matter more than the phenomenology itself.",
       },
       // Revision 4: Affective coupling
       {
@@ -293,12 +293,14 @@ function evaluatePathways(scores, sectionAvgs) {
   const contextDependent = s("temp_2") != null && s("temp_2") >= 4;
   const stablePattern = s("temp_1") != null && s("temp_1") <= 2;
   const acuteOnset = s("temp_1") != null && s("temp_1") >= 4;
-  const interestBasedVariation = s("interest_var") != null && s("interest_var") >= 4;
 
   // Trajectory
   const traj = s("temp_4");
   const homotypicTrait = traj === 1;
   const heterotypicTraj = traj === 2;
+
+  // Engagement pattern (modifier only — does NOT feed pathway scoring)
+  const taskImmersion = s("engagement_pattern") != null && s("engagement_pattern") >= 4;
 
   // Capture / phenomenology / affect
   const externalCapture = s("dyn_capture") === 1;
@@ -409,11 +411,12 @@ function evaluatePathways(scores, sectionAvgs) {
   const pathways = [];
 
   // ── Pathway A-I: ADHD Inattentive ──
+  // NOTE: engagement_pattern (taskImmersion) is intentionally NOT a criterion here.
+  // Per Groen 2020, hyperfocus-pattern is non-discriminating in case-control comparisons.
   const pathAI = { id: 'A-I', label: 'Stable trait inattentive pattern (ADHD-I consistent)', criteria: [] };
   pathAI.criteria.push(buildCriterion('Stable/lifelong course', stablePattern, 'anchor'));
   pathAI.criteria.push(buildCriterion('Cross-context impairment', crossContext, 'anchor'));
   pathAI.criteria.push(buildCriterion('Predominantly inattentive subtype', inattentiveSubtype, 'supporting'));
-  pathAI.criteria.push(buildCriterion('Interest-based variation (hyperfocus capacity)', interestBasedVariation, 'supporting'));
   pathAI.criteria.push(buildCriterion('Weak affective coupling', weakAffect, 'supporting'));
   pathAI.criteria.push(buildCriterion('Low variability', lowVar, 'supporting'));
   pathAI.criteria.push(buildCriterion('Homotypic trajectory (childhood → adult ADHD)', homotypicTrait, 'supporting'));
@@ -424,11 +427,11 @@ function evaluatePathways(scores, sectionAvgs) {
   }
 
   // ── Pathway A-C: ADHD Combined ──
+  // NOTE: engagement_pattern is intentionally NOT a criterion here either.
   const pathAC = { id: 'A-C', label: 'Stable trait combined pattern (ADHD-C consistent)', criteria: [] };
   pathAC.criteria.push(buildCriterion('Stable/lifelong course', stablePattern, 'anchor'));
   pathAC.criteria.push(buildCriterion('Cross-context impairment', crossContext, 'anchor'));
   pathAC.criteria.push(buildCriterion('Combined subtype (prominent H/I)', combinedSubtype, 'anchor'));
-  pathAC.criteria.push(buildCriterion('Interest-based variation', interestBasedVariation, 'supporting'));
   pathAC.criteria.push(buildCriterion('Racing thoughts (ADHD-pattern)', racing && !lowEnergy, 'supporting'));
   pathAC.criteria.push(buildCriterion('Emotional dysregulation', strongAffect && (affectType === 2 || affectType === 3), 'supporting'));
   pathAC.criteria.push(buildCriterion('Homotypic trajectory', homotypicTrait, 'supporting'));
@@ -535,7 +538,6 @@ function evaluatePathways(scores, sectionAvgs) {
         stablePattern && 'a stable, lifelong course',
         crossContext && 'impairment that crosses settings',
         inattentiveSubtype && 'a predominantly inattentive presentation (no prominent hyperactivity)',
-        interestBasedVariation && 'preserved hyperfocus capacity for novel/rewarding tasks',
         weakAffect && 'attention that does not track mood state',
         lowVar && 'low intra- and inter-session variability',
         homotypicTrait && 'a homotypic developmental trajectory (childhood → adult ADHD)',
@@ -544,7 +546,7 @@ function evaluatePathways(scores, sectionAvgs) {
         ? ' Structured tasks remain relatively preserved, consistent with ADHD\'s typical dissociation between coercive testing and naturalistic functioning.'
         : '';
       const overlapNote = ' The inattentive presentation has notably less overlap with mood-spectrum cognition than the combined subtype, simplifying the differential.';
-      return `Pattern most consistent with trait inattentive ADHD (ADHD-I). The conclusion rests on ${findings || 'the configuration of trait inattentive features'}, with the diagnostic signature being lifelong inattention combined with weak affective coupling and capacity for interest-based hyperfocus.${preservedNote}${overlapNote}`;
+      return `Pattern most consistent with trait inattentive ADHD (ADHD-I). The conclusion rests on ${findings || 'the configuration of trait inattentive features'}, with the diagnostic signature being lifelong inattention combined with weak affective coupling.${preservedNote}${overlapNote}`;
     }
 
     if (id === 'A-C') {
@@ -552,7 +554,6 @@ function evaluatePathways(scores, sectionAvgs) {
         stablePattern && 'a stable, lifelong course',
         crossContext && 'cross-context impairment',
         combinedSubtype && 'prominent hyperactivity/impulsivity beyond inattention',
-        interestBasedVariation && 'interest-based attentional variation',
         homotypicTrait && 'a homotypic developmental trajectory',
       ], 4);
       const racingNote = racing
@@ -662,7 +663,11 @@ function evaluatePathways(scores, sectionAvgs) {
     return '';
   };
 
-  const interpretation = buildInterpretation(primary);
+  const baseInterpretation = buildInterpretation(primary);
+  const immersionNote = (taskImmersion && primary.id !== 'D')
+    ? " Separately, the patient reports a task-immersion pattern with disengagement difficulty. This is clinically relevant for functional planning (transition routines, screen-time structure, external stopping cues) but is not diagnostically discriminating — case-control evidence (Groen 2020) does not support specificity for this pattern, which appears across ADHD, autism, AuDHD, OCD-spectrum, and nonclinical samples."
+    : "";
+  const interpretation = baseInterpretation + immersionNote;
 
   // ── Next steps ──
   const nextStepsMap = {
@@ -746,6 +751,11 @@ function evaluatePathways(scores, sectionAvgs) {
     return nextStepsMap[p.id] || [];
   };
 
+  const immersionSteps = [
+    "Functional planning for task-immersion pattern: external stopping cues, transition routines, structured screen-time limits",
+    "Functional consequences (gaming/screen overuse, missed transitions, neglect of basic needs) are the management target — not the phenomenology itself",
+  ];
+
   // ── Conflict detection ──
   const conflicts = [];
 
@@ -809,10 +819,10 @@ function evaluatePathways(scores, sectionAvgs) {
   if (taskAvoidance) modifiers.push("Task avoidance pattern");
   if (timeOnTaskDecline) modifiers.push("Time-on-task decline");
   if (contextDependent) modifiers.push("State-dependent");
-  if (interestBasedVariation) modifiers.push("Interest-based variation");
   if (combinedSubtype) modifiers.push("Combined H/I subtype");
   if (heterotypicTraj) modifiers.push("Heterotypic trajectory");
   if (homotypicTrait) modifiers.push("Homotypic trajectory");
+  if (taskImmersion) modifiers.push("Task immersion pattern (non-specific)");
 
   const phenom = s("dyn_phenom");
   const phenomLabels = { 1: "Foggy/slowed", 2: "Scattered", 3: "Crowded", 4: "Racing", 5: "Blank/disengaged", 6: "Overcontrolled" };
@@ -835,12 +845,17 @@ function evaluatePathways(scores, sectionAvgs) {
     implication = "ADHD diagnosis should be deferred pending resolution of the identified attentional driver.";
   }
 
+  const baseSteps = getNextSteps(primary);
+  const finalSteps = (taskImmersion && primary.id !== 'D')
+    ? [...baseSteps, ...immersionSteps]
+    : baseSteps;
+
   return {
     primary: { id: primary.id, label: primary.label, met: primary.met, total: primary.total, criteria: primary.criteria, bridgePhenotype: primary.bridgePhenotype },
     runner: runner ? { id: runner.id, label: runner.label, met: runner.met, total: runner.total, criteria: runner.criteria } : null,
     isUrgent: false,
     interpretation,
-    nextSteps: getNextSteps(primary),
+    nextSteps: finalSteps,
     implication,
     conflicts,
     modifiers,
@@ -1239,6 +1254,10 @@ function AttentionAssessment() {
       const bridgeTag = pathwayResult.primary.bridgePhenotype ? " [BRIDGE phenotype]" : "";
       lines.push(`Primary Pattern: ${pathwayResult.primary.label}${bridgeTag}`);
       if (pathwayResult.modifiers.length > 0) lines.push(`Modifiers: ${pathwayResult.modifiers.join(", ")}`);
+      const hasImmersionModifier = pathwayResult.modifiers.some(m => m && m.toString().startsWith("Task immersion pattern"));
+      if (hasImmersionModifier) {
+        lines.push("  Note: task immersion pattern is non-discriminating per Groen 2020 — included for clinical formulation, not as a diagnostic discriminator. Functional consequences are the management target.");
+      }
       lines.push("");
       lines.push("INTERPRETATION");
       lines.push(pathwayResult.interpretation);
@@ -1668,6 +1687,8 @@ function AttentionAssessment() {
 
             <div className="citation">
               Derived from: Albertella L, Lee RSC, Fontenelle LF. Attention and Its Symptoms. <em>Psychiatr Clin N Am.</em> 2026.<br/>
+              Pathway logic informed by: Vannucchi et al. (2019) BRIDGE-II-Mix, <em>J Affect Disord</em>; Wilens et al. (2003) <em>Biol Psychiatry</em>; Bertschy et al. (2023) <em>Neuropsychiatr Dis Treat</em>; Comparelli et al. (2022) <em>Front Psychiatry</em>.<br/>
+              Engagement-pattern item informed by Groen et al. (2020) <em>Res Dev Disabil</em> 107:103789 and Ayers-Glassey & Smilek (2024) <em>Curr Psychol</em> 43:11254. Per case-control evidence, this pattern is non-discriminating for ADHD; the item is included for clinical formulation and not used in pathway scoring.<br/>
               <strong>Draft clinical tool — not validated. Observation-based assessment should carry more interpretive weight than structured tasks per the source framework.</strong>
             </div>
           </div>
