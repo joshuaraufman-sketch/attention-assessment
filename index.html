@@ -1061,6 +1061,8 @@ const css = `
   .btn-primary:hover { background: var(--c-accent-hover); }
   .btn-secondary { background: var(--c-surface); color: var(--c-text-secondary); border: 1px solid var(--c-border); }
   .btn-secondary:hover { border-color: var(--c-accent); color: var(--c-accent); }
+  .btn-danger { background: var(--c-warn); color: white; border: 2px solid var(--c-warn); }
+  .btn-danger:hover { background: #a33025; border-color: #a33025; }
 
   .citation { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--c-border-light); font-size: 0.72rem; color: var(--c-text-muted); line-height: 1.5; }
 
@@ -1182,7 +1184,28 @@ function AttentionAssessment() {
     return null;
   };
 
-  const resetAll = () => {
+  const [resetPending, setResetPending] = useState(false);
+  const resetTimeoutRef = useRef(null);
+
+  useEffect(() => () => {
+    if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);
+  }, []);
+
+  const startReset = () => {
+    setResetPending(true);
+    if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);
+    resetTimeoutRef.current = setTimeout(() => {
+      setResetPending(false);
+      resetTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  const confirmReset = () => {
+    if (resetTimeoutRef.current) {
+      clearTimeout(resetTimeoutRef.current);
+      resetTimeoutRef.current = null;
+    }
+    setResetPending(false);
     setScores({});
     setAutoScores({});
     setFormulation({ patternClass: "", attribution: "", stateVsTrait: "", biasTargets: "", confounders: "", plan: "", additionalNotes: "" });
@@ -1769,7 +1792,12 @@ function AttentionAssessment() {
             <div className="action-bar">
               <button className="btn btn-primary" onClick={copyClinicalNote}>{copyNoteStatus || "Copy for Chart"}</button>
               <button className="btn btn-secondary" onClick={copyFullRecord}>{copyFullStatus || "Copy Full Record"}</button>
-              <button className="btn btn-secondary" onClick={resetAll}>Reset All</button>
+              <button
+                className={`btn ${resetPending ? 'btn-danger' : 'btn-secondary'}`}
+                onClick={resetPending ? confirmReset : startReset}
+              >
+                {resetPending ? 'Confirm Reset' : 'Reset All'}
+              </button>
             </div>
 
             <div className="citation">
