@@ -119,8 +119,8 @@ const SECTIONS = [
       { id: "var_4", text: "Stress sensitivity — how much does acute stress affect attentional performance?", anchors: ["None", "Mild", "Moderate", "Marked", "Extreme"], isQualitative: true, administration: "Ask: \"When you're under stress, does your concentration get worse? How much worse?\"" },
       // Revision 8: Merged attentional capture (replaces dyn_4 + dyn_5)
       {
-        id: "dyn_capture", text: "Source of attentional capture — when attention fails, what captures it?", isQualitative: true,
-        anchors: ["External stimuli", "Internal thoughts", "Emotional states", "Task avoidance", "Mixed / unclear"],
+        id: "dyn_capture", text: "Source of attentional capture — when attention fails, what captures it?", isQualitative: true, multiSelect: true,
+        anchors: ["External stimuli", "Internal thoughts", "Emotional states", "Task avoidance", "Other / unclear"],
         administration: "Ask: \"When you lose focus, where does your mind go?\" Distinguish between: External stimuli = environmental distractions pull attention (classic distractibility). Internal thoughts = obsessions, rumination, worry, or delusional content consume attention (attentional depolarization). Emotional states = affect itself disrupts processing. Task avoidance = attention diverts from aversive tasks to anything else. This replaces the prior distractibility vs. distraction and depolarization items with a cleaner mechanistic construct.",
       },
       // Revision 3: Upgraded phenomenology (7 anchors)
@@ -200,7 +200,7 @@ const SECTIONS = [
       { id: "ctx_5", text: "Time on task — was attentional performance stable or declining as the assessment progressed?", anchors: ["Rapid early decline", "Progressive decline", "Mild late decline", "Stable throughout", "Improved with engagement"] },
       // Revision 5: Triggering factors
       {
-        id: "ctx_triggers", text: "Triggering factors — what precipitates or worsens attentional episodes?", isQualitative: true,
+        id: "ctx_triggers", text: "Triggering factors — what precipitates or worsens attentional episodes?", isQualitative: true, multiSelect: true,
         anchors: ["None identifiable", "Sleep deprivation", "Stress", "Conflict / interpersonal", "Medication / substance", "Mood episode"],
         administration: "Ask: \"Can you identify anything that makes your concentration worse? Does it follow bad sleep, stressful events, arguments, medication changes, or mood shifts?\" This tightens causal inference: identifiable triggers suggest state-dependent attentional impairment with a modifiable driver, while no identifiable triggers are more consistent with a trait deficit.",
       },
@@ -281,6 +281,12 @@ const buildCriterion = (label, met, tier) => {
 
 function evaluatePathways(scores, sectionAvgs) {
   const s = (id) => scores[id];
+  const has = (id, val) => {
+    const v = scores[id];
+    if (Array.isArray(v)) return v.includes(val);
+    return v === val;
+  };
+  const hasAny = (id, ...vals) => vals.some(val => has(id, val));
   const obsAvg = sectionAvgs.observation;
   const oriAvg = sectionAvgs.orientation;
   const taskAvg = sectionAvgs.attentional_tasks;
@@ -303,10 +309,10 @@ function evaluatePathways(scores, sectionAvgs) {
   const taskImmersion = s("engagement_pattern") != null && s("engagement_pattern") >= 4;
 
   // Capture / phenomenology / affect
-  const externalCapture = s("dyn_capture") === 1;
-  const internalCapture = s("dyn_capture") === 2;
-  const emotionalCapture = s("dyn_capture") === 3;
-  const taskAvoidance = s("dyn_capture") === 4;
+  const externalCapture = has("dyn_capture", 1);
+  const internalCapture = has("dyn_capture", 2);
+  const emotionalCapture = has("dyn_capture", 3);
+  const taskAvoidance = has("dyn_capture", 4);
   const weakAffect = s("dyn_affect") === 5;
   const strongAffect = s("dyn_affect") != null && s("dyn_affect") <= 4;
   const affectType = s("dyn_affect");
@@ -448,7 +454,7 @@ function evaluatePathways(scores, sectionAvgs) {
   pathB.criteria.push(buildCriterion('Time-on-task decline', timeOnTaskDecline, 'supporting'));
   pathB.criteria.push(buildCriterion('Sleep sensitivity', s("var_3") != null && s("var_3") >= 3, 'supporting'));
   pathB.criteria.push(buildCriterion('Stress sensitivity', s("var_4") != null && s("var_4") >= 3, 'supporting'));
-  pathB.criteria.push(buildCriterion('Identifiable triggers', s("ctx_triggers") != null && s("ctx_triggers") >= 2 && s("ctx_triggers") <= 6, 'consistent'));
+  pathB.criteria.push(buildCriterion('Identifiable triggers', hasAny("ctx_triggers", 2, 3, 4, 5, 6), 'consistent'));
   const bScore = scorePathway(pathB.criteria);
   if (bScore.anchorMet) {
     pathways.push({ ...pathB, score: bScore.score, met: bScore.met.length, total: pathB.criteria.length, criteria: bScore.met });
@@ -813,10 +819,13 @@ function evaluatePathways(scores, sectionAvgs) {
   if (highVar) modifiers.push("Marked variability");
   if (markedFluctuation) modifiers.push("Within-session fluctuation");
   if (strongAffect) modifiers.push("Strong affective coupling");
-  if (internalCapture) modifiers.push("Internal attentional capture");
-  if (externalCapture) modifiers.push("External distractibility");
-  if (emotionalCapture) modifiers.push("Emotional capture");
-  if (taskAvoidance) modifiers.push("Task avoidance pattern");
+  const captureLabels = { 1: "External distractibility", 2: "Internal capture", 3: "Emotional capture", 4: "Task avoidance", 5: "Unclear capture source" };
+  const captureVal = scores["dyn_capture"];
+  if (Array.isArray(captureVal)) {
+    captureVal.forEach(v => { if (captureLabels[v]) modifiers.push(captureLabels[v]); });
+  } else if (captureVal && captureLabels[captureVal]) {
+    modifiers.push(captureLabels[captureVal]);
+  }
   if (timeOnTaskDecline) modifiers.push("Time-on-task decline");
   if (contextDependent) modifiers.push("State-dependent");
   if (combinedSubtype) modifiers.push("Combined H/I subtype");
@@ -1151,18 +1160,32 @@ function AttentionAssessment() {
   }, []);
 
   const updateFormulation = useCallback((field, value) => { setFormulation(prev => ({ ...prev, [field]: value })); }, []);
-  const setScore = useCallback((itemId, value) => { setScores(prev => ({ ...prev, [itemId]: prev[itemId] === value ? null : value })); }, []);
+  const setScore = useCallback((itemId, value) => {
+    setScores(prev => {
+      const item = SECTIONS.flatMap(s => s.items).find(i => i.id === itemId);
+      if (item && item.multiSelect) {
+        const cur = Array.isArray(prev[itemId]) ? prev[itemId] : [];
+        const next = cur.includes(value) ? cur.filter(v => v !== value) : [...cur, value].sort((a, b) => a - b);
+        return { ...prev, [itemId]: next };
+      }
+      return { ...prev, [itemId]: prev[itemId] === value ? null : value };
+    });
+  }, []);
   const toggleSection = useCallback((sectionId) => { setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] })); }, []);
 
   const getSectionAvg = (section) => {
-    const rated = section.items.filter(i => !i.isQualitative).map(i => scores[i.id]).filter(v => v != null);
+    const rated = section.items.filter(i => !i.isQualitative).map(i => scores[i.id]).filter(v => typeof v === 'number');
     if (rated.length === 0) return null;
     return rated.reduce((a, b) => a + b, 0) / rated.length;
   };
 
   const getSectionCompletion = (section) => {
     const total = section.items.length;
-    const done = section.items.filter(i => scores[i.id] != null).length;
+    const done = section.items.filter(i => {
+      const v = scores[i.id];
+      if (Array.isArray(v)) return v.length > 0;
+      return v != null;
+    }).length;
     return `${done}/${total}`;
   };
 
@@ -1395,15 +1418,25 @@ function AttentionAssessment() {
     lines.push("ITEM-LEVEL DETAIL");
     lines.push(hr);
     SECTIONS.forEach(section => {
-      const ratedItems = section.items.filter(i => scores[i.id] != null);
+      const ratedItems = section.items.filter(i => {
+        const v = scores[i.id];
+        if (Array.isArray(v)) return v.length > 0;
+        return v != null;
+      });
       if (ratedItems.length > 0) {
         lines.push(`\n${section.title.toUpperCase()}`);
         ratedItems.forEach(item => {
           const val = scores[item.id];
-          const anchor = item.anchors[val - 1] || "";
           const shortText = item.text.split("—")[0].trim();
           const autoTag = autoScores[item.id] ? ` [auto: ${TOOL_LABELS[autoScores[item.id].tool] || autoScores[item.id].tool}]` : "";
-          lines.push(`  ${shortText}: ${val}/${item.anchors.length} (${anchor})${autoTag}`);
+          if (Array.isArray(val)) {
+            const sorted = [...val].sort((a, b) => a - b);
+            const anchorList = sorted.map(v => item.anchors[v - 1]).filter(Boolean).join(", ");
+            lines.push(`  ${shortText}: [${sorted.join(", ")}] (${anchorList})${autoTag}`);
+          } else {
+            const anchor = item.anchors[val - 1] || "";
+            lines.push(`  ${shortText}: ${val}/${item.anchors.length} (${anchor})${autoTag}`);
+          }
         });
       }
     });
@@ -1505,16 +1538,22 @@ function AttentionAssessment() {
                               <div className="admin-body">{item.administration}</div>
                             </details>
                           )}
+                          {item.multiSelect && (
+                            <div style={{ fontSize: "0.7rem", color: "var(--c-text-muted)", marginBottom: "4px", fontWeight: 600 }}>Select all that apply</div>
+                          )}
                           <div className="rating-row">
                             {item.anchors.map((anchor, idx) => {
                               const val = idx + 1;
-                              const isSelected = scores[item.id] === val;
-                              const isAutoSelected = isSelected && autoInfo;
+                              const curScore = scores[item.id];
+                              const isSelected = item.multiSelect
+                                ? (Array.isArray(curScore) && curScore.includes(val))
+                                : curScore === val;
+                              const isAutoSelected = isSelected && autoInfo && !item.multiSelect;
                               return (
                                 <button key={idx} className={`rating-btn ${isSelected ? "selected" : ""} ${isAutoSelected ? "auto-selected" : ""}`}
                                   onClick={() => {
                                     setScore(item.id, val);
-                                    if (autoInfo && scores[item.id] !== val) setAutoScores(prev => { const n = { ...prev }; delete n[item.id]; return n; });
+                                    if (autoInfo && !item.multiSelect && scores[item.id] !== val) setAutoScores(prev => { const n = { ...prev }; delete n[item.id]; return n; });
                                   }}>
                                   <div><span className="score-num">{val}</span>{anchor}</div>
                                 </button>
@@ -1638,15 +1677,15 @@ function AttentionAssessment() {
                 )}
 
                 {/* Attentional capture */}
-                {scores["dyn_capture"] != null && (
+                {Array.isArray(scores["dyn_capture"]) && scores["dyn_capture"].length > 0 && (
                   <div className="interp-panel interp-capture">
                     <div className="interp-header"><span className="interp-icon">🎯</span><strong>Source of Attentional Capture</strong></div>
                     <div className="interp-body">
-                      {scores["dyn_capture"] === 1 && <p><strong>External stimuli</strong> — classic distractibility. Attention involuntarily captured by environmental inputs.</p>}
-                      {scores["dyn_capture"] === 2 && <p><strong>Internal thoughts</strong> — attentional depolarization. Consumed by obsessions, rumination, worry, or delusional material.</p>}
-                      {scores["dyn_capture"] === 3 && <p><strong>Emotional states</strong> — affect itself disrupts processing. Cognitive system overwhelmed by emotional arousal.</p>}
-                      {scores["dyn_capture"] === 4 && <p><strong>Task avoidance</strong> — selective disengagement from aversive/low-reward tasks. CAN focus, but selectively doesn't.</p>}
-                      {scores["dyn_capture"] === 5 && <p><strong>Mixed/unclear</strong> — source doesn't fall cleanly into one category.</p>}
+                      {scores["dyn_capture"].includes(1) && <p><strong>External stimuli</strong> — classic distractibility. Attention involuntarily captured by environmental inputs.</p>}
+                      {scores["dyn_capture"].includes(2) && <p><strong>Internal thoughts</strong> — attentional depolarization. Consumed by obsessions, rumination, worry, or delusional material.</p>}
+                      {scores["dyn_capture"].includes(3) && <p><strong>Emotional states</strong> — affect itself disrupts processing. Cognitive system overwhelmed by emotional arousal.</p>}
+                      {scores["dyn_capture"].includes(4) && <p><strong>Task avoidance</strong> — selective disengagement from aversive/low-reward tasks. CAN focus, but selectively doesn't.</p>}
+                      {scores["dyn_capture"].includes(5) && <p><strong>Other / unclear</strong> — capture source can't be cleanly identified.</p>}
                     </div>
                   </div>
                 )}
