@@ -1087,7 +1087,8 @@ function AttentionAssessment() {
   const [autoScores, setAutoScores] = useState({});
   const [pasteStatus, setPasteStatus] = useState("");
   const openWindowsRef = useRef({});
-  const [copyStatus, setCopyStatus] = useState("");
+  const [copyNoteStatus, setCopyNoteStatus] = useState("");
+  const [copyFullStatus, setCopyFullStatus] = useState("");
 
   // ── postMessage listener ──
   useEffect(() => {
@@ -1233,7 +1234,84 @@ function AttentionAssessment() {
   const [showDetails, setShowDetails] = useState(false);
 
   // ── Chart text ──
-  const generateChartText = useCallback(() => {
+  const generateClinicalNote = useCallback(() => {
+    const lines = [];
+    const headerParts = ["ATTENTION ASSESSMENT"];
+    if (patientInfo.name) headerParts.push(patientInfo.name);
+    if (patientInfo.date) headerParts.push(patientInfo.date);
+    lines.push(headerParts.join(" — "));
+    if (patientInfo.mrn) lines.push(`Examiner: ${patientInfo.mrn}`);
+    lines.push("");
+
+    const domainLabels = [
+      ["observation", "Observation"],
+      ["orientation", "Orientation"],
+      ["attentional_tasks", "Tasks"],
+      ["attentional_dynamics", "Dynamics"],
+      ["context", "Context"],
+    ];
+    const domainStr = domainLabels.map(([id, label]) => {
+      const v = sectionAvgs[id];
+      return `${label} ${v != null ? v.toFixed(1) : "—"}`;
+    }).join(" | ");
+
+    const taskImmersion = scores["engagement_pattern"] != null && scores["engagement_pattern"] >= 4;
+
+    if (pathwayResult) {
+      const bridgeTag = pathwayResult.primary.bridgePhenotype ? " [BRIDGE phenotype]" : "";
+      lines.push(`Profile: ${pathwayResult.primary.label}${bridgeTag}`);
+      if (pathwayResult.modifiers.length > 0) lines.push(`Modifiers: ${pathwayResult.modifiers.join(", ")}`);
+      if (taskImmersion) lines.push("Task immersion: Present (non-discriminating per Groen 2020; functional management target)");
+      lines.push("");
+      lines.push(`Domains: ${domainStr}`);
+      lines.push("");
+      lines.push(`Interpretation: ${pathwayResult.interpretation}`);
+      lines.push("");
+      if (pathwayResult.implication) {
+        lines.push(`Implication: ${pathwayResult.implication}`);
+        lines.push("");
+      }
+      if (pathwayResult.nextSteps && pathwayResult.nextSteps.length > 0) {
+        lines.push("Next steps:");
+        pathwayResult.nextSteps.forEach(st => lines.push(`• ${st}`));
+        lines.push("");
+      }
+
+      const formBits = [];
+      if (formulation.patternClass) formBits.push(formulation.patternClass);
+      if (formulation.attribution) formBits.push(formulation.attribution);
+      if (formulation.stateVsTrait) formBits.push(formulation.stateVsTrait);
+      if (formBits.length > 0 || formulation.plan) {
+        let formLine = `Formulation: ${formBits.join(", ")}`;
+        if (formBits.length > 0) formLine += ".";
+        if (formulation.plan) formLine += `${formBits.length > 0 ? " " : ""}${formulation.plan}`;
+        lines.push(formLine);
+        lines.push("");
+      }
+
+      if (pathwayResult.conflicts && pathwayResult.conflicts.length > 0) {
+        lines.push(`Conflicts: ${pathwayResult.conflicts.map(c => `${c.label} — ${c.text}`).join("; ")}`);
+        lines.push("");
+      }
+    } else {
+      lines.push(`Domains: ${domainStr}`);
+      if (taskImmersion) lines.push("Task immersion: Present (non-discriminating per Groen 2020; functional management target)");
+      lines.push("");
+      if (formulation.patternClass) lines.push(`Pattern: ${formulation.patternClass}`);
+      if (formulation.attribution) lines.push(`Attribution: ${formulation.attribution}`);
+      if (formulation.stateVsTrait) lines.push(`State vs. Trait: ${formulation.stateVsTrait}`);
+      if (formulation.plan) lines.push(`Plan: ${formulation.plan}`);
+      if (formulation.additionalNotes) lines.push(`Notes: ${formulation.additionalNotes}`);
+      if (formulation.patternClass || formulation.attribution || formulation.stateVsTrait || formulation.plan || formulation.additionalNotes) {
+        lines.push("");
+      }
+    }
+
+    lines.push("Draft tool — not validated. Based on Albertella et al., Psychiatr Clin N Am (2026).");
+    return lines.join("\n");
+  }, [scores, patientInfo, formulation, pathwayResult, sectionAvgs]);
+
+  const generateFullRecord = useCallback(() => {
     const lines = [];
     const hr = "─".repeat(50);
     lines.push("CLINICAL ATTENTION ASSESSMENT");
@@ -1325,14 +1403,22 @@ function AttentionAssessment() {
     return lines.join("\n");
   }, [scores, patientInfo, formulation, globalAvg, pathwayResult, autoScores]);
 
-  const copyToClipboard = useCallback(async () => {
-    const text = generateChartText();
+  const writeToClipboard = async (text) => {
     try { await navigator.clipboard.writeText(text); } catch {
       const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
       document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
     }
-    setCopyStatus("Copied"); setTimeout(() => setCopyStatus(""), 2000);
-  }, [generateChartText]);
+  };
+
+  const copyClinicalNote = useCallback(async () => {
+    await writeToClipboard(generateClinicalNote());
+    setCopyNoteStatus("Copied"); setTimeout(() => setCopyNoteStatus(""), 2000);
+  }, [generateClinicalNote]);
+
+  const copyFullRecord = useCallback(async () => {
+    await writeToClipboard(generateFullRecord());
+    setCopyFullStatus("Copied"); setTimeout(() => setCopyFullStatus(""), 2000);
+  }, [generateFullRecord]);
 
   // ── Render ──
   return (
@@ -1681,7 +1767,8 @@ function AttentionAssessment() {
             )}
 
             <div className="action-bar">
-              <button className="btn btn-primary" onClick={copyToClipboard}>{copyStatus || "Copy for Chart"}</button>
+              <button className="btn btn-primary" onClick={copyClinicalNote}>{copyNoteStatus || "Copy for Chart"}</button>
+              <button className="btn btn-secondary" onClick={copyFullRecord}>{copyFullStatus || "Copy Full Record"}</button>
               <button className="btn btn-secondary" onClick={resetAll}>Reset All</button>
             </div>
 
