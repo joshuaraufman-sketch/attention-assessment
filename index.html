@@ -894,17 +894,39 @@ const css = `
 .header .epistemic-frame {
   max-width: 620px;
   margin: 12px auto 0;
-  padding: 10px 16px;
   background: #f8f7f5;
   border-left: 3px solid var(--c-accent);
   border-radius: 0 var(--radius) var(--radius) 0;
+  text-align: left;
+}
+.header .epistemic-frame summary {
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-accent);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  letter-spacing: 0.02em;
+}
+.header .epistemic-frame summary::-webkit-details-marker {
+  display: none;
+}
+.header .epistemic-frame summary::before {
+  content: "▸ ";
+  font-size: 0.7rem;
+}
+.header .epistemic-frame[open] > summary::before {
+  content: "▾ ";
+}
+.header .epistemic-frame-body {
+  padding: 4px 16px 12px;
   font-size: 0.78rem;
   line-height: 1.55;
   color: var(--c-text-secondary);
-  text-align: left;
   font-style: italic;
 }
-.header .epistemic-frame strong {
+.header .epistemic-frame-body strong {
   font-style: normal;
   color: var(--c-text);
 }
@@ -1446,9 +1468,12 @@ function AttentionAssessment() {
           <h1>Clinical Attention Assessment</h1>
           <div className="subtitle">Based on Albertella, Lee & Fontenelle — <em>Psychiatr Clin N Am</em> (2026)</div>
           <div className="draft-badge">Draft — Not Validated</div>
-          <div className="epistemic-frame">
-            <strong>What this tool does:</strong> characterizes the phenomenology and likely mechanisms of attentional dysfunction in the present encounter. Pattern labels (e.g., "ADHD-I consistent," "affective-driven") describe the shape of the presentation, not DSM diagnostic conclusions. The criterion-overlap problem in DSM-5-TR ADHD means apparent comorbidity with mood/anxiety conditions often reflects shared non-specific symptoms rather than true co-occurrence; this tool surfaces phenomenology to help disentangle that, but does not resolve it.
-          </div>
+          <details className="epistemic-frame">
+            <summary>About this tool — phenomenology, not diagnosis</summary>
+            <div className="epistemic-frame-body">
+              <strong>What this tool does:</strong> characterizes the phenomenology and likely mechanisms of attentional dysfunction in the present encounter. Pattern labels (e.g., "ADHD-I consistent," "affective-driven") describe the shape of the presentation, not DSM diagnostic conclusions. The criterion-overlap problem in DSM-5-TR ADHD means apparent comorbidity with mood/anxiety conditions often reflects shared non-specific symptoms rather than true co-occurrence; this tool surfaces phenomenology to help disentangle that, but does not resolve it.
+            </div>
+          </details>
         </div>
 
         <div className="patient-bar">
