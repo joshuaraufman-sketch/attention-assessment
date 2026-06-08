@@ -51,7 +51,7 @@ const SECTIONS = [
       {
         id: "temp_1", text: "Course of attentional difficulty", isQualitative: true,
         anchors: ["Lifelong, stable", "Lifelong, variable", "Episodic (days–weeks)", "Progressive", "Acute onset"],
-        administration: "Ask: \"Have you always had trouble with focus, or is this new?\" \"Did teachers or parents comment on your attention as a child?\" \"When did you first notice this was a problem?\" \"Does it come and go, or is it constant?\" Lifelong-stable strongly supports ADHD. Lifelong-variable suggests ADHD with mood/anxiety modulation. Episodic points to mood episodes, substance cycles, or stress-reactive patterns. Progressive raises neurocognitive decline. Acute onset (days) demands delirium workup.",
+        administration: "Ask: \"Have you always had trouble with focus, or is this new?\" \"Did teachers or parents comment on your attention as a child?\" \"When did you first notice this was a problem?\" \"Does it come and go, or is it constant?\" A reported lifelong-stable course is consistent with an ADHD-pattern trajectory but is not confirmatory — retrospective recall of childhood attentional symptoms is unreliable in both directions (adult self-recall accuracy ~55%; Breda et al. 2020), and longitudinal cohorts show childhood and adult ADHD groups are largely non-overlapping (Moffitt et al. 2015). Lifelong-variable suggests an ADHD-pattern modulated by mood/anxiety. Episodic points to mood episodes, substance cycles, or stress-reactive patterns. Progressive raises neurocognitive decline. Acute onset (days) demands delirium workup. Treat the recalled course as one data point among several; cross-context impairment and current phenomenology carry more weight than the retrospective story.",
       },
       {
         id: "temp_2", text: "Context sensitivity — how much does the attentional difficulty vary with state factors?", isQualitative: true,
@@ -74,7 +74,7 @@ const SECTIONS = [
           "Lifelong with mood overlay (homotypic)",
           "Cannot determine",
         ],
-        administration: "Per Comparelli et al. (2022) and Faedda's heterotypic trajectory framework, the developmental sequence has diagnostic weight beyond simple course. Probe: 'Were you identified as having attention problems as a child?' 'When did mood symptoms first appear relative to attention symptoms?' 'Did mood episodes start in adolescence or later?' Heterotypic trajectory (childhood ADHD → adult mood episodes) suggests a distinct clinical phenotype with implications for treatment sequencing.",
+        administration: "Per Comparelli et al. (2022) and Faedda's heterotypic trajectory framework, the developmental sequence has diagnostic weight beyond simple course. Probe: 'Were you identified as having attention problems as a child?' 'When did mood symptoms first appear relative to attention symptoms?' 'Did mood episodes start in adolescence or later?' Heterotypic trajectory (childhood ADHD → adult mood episodes) suggests a distinct clinical phenotype with implications for treatment sequencing. Caveat: this distinction rests entirely on retrospective recall, which is unreliable — adult self-recall of childhood ADHD symptoms is accurate ~55% of the time (Breda 2020), and parental recall 20 years later is worse (~23%; Moffitt 2015). Collateral records (school reports, prior evaluations) are more reliable than patient/parent recall when available, but rarely accessible. Where collateral is absent, the trajectory designation should be flagged as recalled rather than established.",
       },
     ],
   },
@@ -891,6 +891,23 @@ const css = `
   .header h1 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 700; color: var(--c-accent); line-height: 1.2; margin-bottom: 4px; }
   .header .subtitle { font-size: 0.85rem; color: var(--c-text-muted); margin-top: 6px; }
   .header .draft-badge { display: inline-block; background: var(--c-warn-bg); color: var(--c-warn); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 100px; margin-top: 10px; }
+.header .epistemic-frame {
+  max-width: 620px;
+  margin: 12px auto 0;
+  padding: 10px 16px;
+  background: #f8f7f5;
+  border-left: 3px solid var(--c-accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--c-text-secondary);
+  text-align: left;
+  font-style: italic;
+}
+.header .epistemic-frame strong {
+  font-style: normal;
+  color: var(--c-text);
+}
 
   .patient-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
   .patient-bar input { flex: 1; min-width: 140px; font-family: var(--font-body); font-size: 0.85rem; padding: 8px 12px; border: 1px solid var(--c-border); border-radius: var(--radius); background: var(--c-surface); color: var(--c-text); outline: none; transition: border-color 0.2s; }
@@ -1429,6 +1446,9 @@ function AttentionAssessment() {
           <h1>Clinical Attention Assessment</h1>
           <div className="subtitle">Based on Albertella, Lee & Fontenelle — <em>Psychiatr Clin N Am</em> (2026)</div>
           <div className="draft-badge">Draft — Not Validated</div>
+          <div className="epistemic-frame">
+            <strong>What this tool does:</strong> characterizes the phenomenology and likely mechanisms of attentional dysfunction in the present encounter. Pattern labels (e.g., "ADHD-I consistent," "affective-driven") describe the shape of the presentation, not DSM diagnostic conclusions. The criterion-overlap problem in DSM-5-TR ADHD means apparent comorbidity with mood/anxiety conditions often reflects shared non-specific symptoms rather than true co-occurrence; this tool surfaces phenomenology to help disentangle that, but does not resolve it.
+          </div>
         </div>
 
         <div className="patient-bar">
@@ -1700,7 +1720,7 @@ function AttentionAssessment() {
                 <div className="form-field">
                   <label className="form-label">Primary Attribution <span className="form-hint">Given the pattern, what is the most likely source?</span></label>
                   <div className="form-options">
-                    {["ADHD / neurodevelopmental", "Depressive / mood-related", "Anxiety / OCD-driven", "Delirium / organic", "Substance-related", "Neurocognitive decline", "Comorbid / multifactorial", "Insufficient data"].map(opt => (
+                    {["ADHD-pattern / neurodevelopmental", "Depressive / mood-related", "Anxiety / OCD-driven", "Delirium / organic", "Substance-related", "Neurocognitive decline", "Comorbid / multifactorial", "Insufficient data"].map(opt => (
                       <button key={opt} className={`form-chip ${formulation.attribution === opt ? "form-chip-active" : ""}`}
                         onClick={() => updateFormulation("attribution", formulation.attribution === opt ? "" : opt)}>{opt}</button>
                     ))}
@@ -1776,6 +1796,7 @@ function AttentionAssessment() {
               Derived from: Albertella L, Lee RSC, Fontenelle LF. Attention and Its Symptoms. <em>Psychiatr Clin N Am.</em> 2026.<br/>
               Pathway logic informed by: Vannucchi et al. (2019) BRIDGE-II-Mix, <em>J Affect Disord</em>; Wilens et al. (2003) <em>Biol Psychiatry</em>; Bertschy et al. (2023) <em>Neuropsychiatr Dis Treat</em>; Comparelli et al. (2022) <em>Front Psychiatry</em>.<br/>
               Engagement-pattern item informed by Groen et al. (2020) <em>Res Dev Disabil</em> 107:103789 and Ayers-Glassey & Smilek (2024) <em>Curr Psychol</em> 43:11254. Per case-control evidence, this pattern is non-discriminating for ADHD; the item is included for clinical formulation and not used in pathway scoring.<br/>
+              <strong>Criterion-overlap caveat (Szymaniak et al. 2026):</strong> DSM-5-TR ADHD criteria are non-specific — inattention, restlessness, and impulsivity appear across mood, anxiety, substance, and neurocognitive conditions. Frequently-cited comorbidity rates (e.g., the ~3× elevation of ADHD in mood disorders per Sandstrom 2021) likely overstate true co-occurrence because the same underlying disturbance can meet symptom thresholds for multiple categories. When an attentional complaint accompanies an active mood, anxiety, or substance condition, treating the primary condition first — and reassessing attention after — is generally more diagnostically informative than concurrent ADHD attribution. This tool's pathway engine attempts to surface mechanism-level differences (capture source, phenomenology, affective coupling, trajectory) precisely to address this overlap, but it cannot resolve it.<br/>
               <strong>Draft clinical tool — not validated. Observation-based assessment should carry more interpretive weight than structured tasks per the source framework.</strong>
             </div>
           </div>
