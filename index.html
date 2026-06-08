@@ -414,7 +414,7 @@ function evaluatePathways(scores, sectionAvgs) {
   // NOTE: engagement_pattern (taskImmersion) is intentionally NOT a criterion here.
   // Per Groen 2020, hyperfocus-pattern is non-discriminating in case-control comparisons.
   const pathAI = { id: 'A-I', label: 'Stable trait inattentive pattern (ADHD-I consistent)', criteria: [] };
-  pathAI.criteria.push(buildCriterion('Stable/lifelong course', stablePattern, 'anchor'));
+  pathAI.criteria.push(buildCriterion('Stable/lifelong course', stablePattern, 'supporting'));
   pathAI.criteria.push(buildCriterion('Cross-context impairment', crossContext, 'anchor'));
   pathAI.criteria.push(buildCriterion('Predominantly inattentive subtype', inattentiveSubtype, 'supporting'));
   pathAI.criteria.push(buildCriterion('Weak affective coupling', weakAffect, 'supporting'));
@@ -429,7 +429,7 @@ function evaluatePathways(scores, sectionAvgs) {
   // ── Pathway A-C: ADHD Combined ──
   // NOTE: engagement_pattern is intentionally NOT a criterion here either.
   const pathAC = { id: 'A-C', label: 'Stable trait combined pattern (ADHD-C consistent)', criteria: [] };
-  pathAC.criteria.push(buildCriterion('Stable/lifelong course', stablePattern, 'anchor'));
+  pathAC.criteria.push(buildCriterion('Stable/lifelong course', stablePattern, 'supporting'));
   pathAC.criteria.push(buildCriterion('Cross-context impairment', crossContext, 'anchor'));
   pathAC.criteria.push(buildCriterion('Combined subtype (prominent H/I)', combinedSubtype, 'anchor'));
   pathAC.criteria.push(buildCriterion('Racing thoughts (ADHD-pattern)', racing && !lowEnergy, 'supporting'));
@@ -546,7 +546,7 @@ function evaluatePathways(scores, sectionAvgs) {
         ? ' Structured tasks remain relatively preserved, consistent with ADHD\'s typical dissociation between coercive testing and naturalistic functioning.'
         : '';
       const overlapNote = ' The inattentive presentation has notably less overlap with mood-spectrum cognition than the combined subtype, simplifying the differential.';
-      return `Pattern most consistent with trait inattentive ADHD (ADHD-I). The conclusion rests on ${findings || 'the configuration of trait inattentive features'}, with the diagnostic signature being lifelong inattention combined with weak affective coupling.${preservedNote}${overlapNote}`;
+      return `Findings most consistent with a trait inattentive ADHD-pattern (ADHD-I). The conclusion rests on ${findings || 'the configuration of trait inattentive features'}, with the characteristic signature being lifelong inattention combined with weak affective coupling.${preservedNote}${overlapNote}`;
     }
 
     if (id === 'A-C') {
@@ -560,7 +560,7 @@ function evaluatePathways(scores, sectionAvgs) {
         ? ' Racing thoughts are present; per Bertschy et al. (2023) the lexical signature of ADHD-pattern racing (semantic wandering across distant concepts) differs from hypomanic racing (phonemic clustering), but this is hard to detect at bedside — collateral and longitudinal data are essential. Racing thoughts in this context are NOT pathognomonic of bipolarity.'
         : '';
       const overlapNote = ' Per Wilens et al. (2003) and Bertschy et al. (2023), combined-type ADHD shares substantial cognitive and behavioral overlap with mood-spectrum disorders — bipolarity screening is essential before stimulant treatment.';
-      return `Pattern most consistent with trait combined-type ADHD (ADHD-C). Findings include ${findings || 'the trait combined configuration described above'}.${racingNote}${overlapNote}`;
+      return `Findings most consistent with a trait combined-type ADHD-pattern (ADHD-C). Findings include ${findings || 'the trait combined configuration described above'}.${racingNote}${overlapNote}`;
     }
 
     if (id === 'B') {
@@ -836,7 +836,7 @@ function evaluatePathways(scores, sectionAvgs) {
   // ── Implication ──
   let implication = "";
   if ((primary.id === 'A-I' || primary.id === 'A-C') && conflicts.length === 0) {
-    implication = "Findings are consistent with ADHD. Proceed with confirmatory evaluation.";
+    implication = "Findings are consistent with an ADHD-pattern presentation. Proceed with confirmatory evaluation.";
   } else if ((primary.id === 'A-I' || primary.id === 'A-C') && conflicts.length > 0) {
     implication = "ADHD pattern present but conflicts exist. Address the flagged issues before diagnosing.";
   } else if (primary.bridgePhenotype) {
