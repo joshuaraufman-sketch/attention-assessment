@@ -428,31 +428,7 @@ const css = `
     color: var(--c-pass);
   }
 
-  .degradation-panel.info {
-    background: var(--c-bg);
-    border: 1px solid var(--c-border);
-    color: var(--c-text-secondary);
-  }
-
   .degradation-panel strong { display: block; margin-bottom: 4px; }
-
-  .quartile-strip {
-    display: flex;
-    gap: 6px;
-    margin-top: 10px;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-  }
-
-  .quartile-strip div {
-    flex: 1;
-    text-align: center;
-    padding: 6px 4px;
-    border: 1px solid var(--c-border-light);
-    border-radius: 4px;
-    background: var(--c-surface);
-    color: var(--c-text-secondary);
-  }
 
   /* ─── Buttons ─── */
   .btn {
@@ -625,45 +601,6 @@ function CPTAdmin() {
     const secondHalfRate = secondHalfTargets > 0 ? secondHalfErrors / secondHalfTargets : 0;
     const timeDegradation = secondHalfErrors > firstHalfErrors && (secondHalfRate - firstHalfRate) > 0.1;
 
-    // ── Quartile error distribution ──────────────────────────────
-    // Letters are auto-paced at 1/sec, so error index is a time proxy.
-    // Distinguishes decrement (back-loaded), erratic (clustered/inconsistent),
-    // flat-low (impaired from onset, no decay), and flat-clean.
-    // Thresholds below are ARBITRARY and unvalidated — see panel copy.
-    const qBounds = [0, 1, 2, 3, 4].map(i => Math.floor(sequence.length * i / 4));
-    const quartileTargets = [0, 1, 2, 3].map(i =>
-      sequence.slice(qBounds[i], qBounds[i + 1]).filter(s => s.isTarget).length
-    );
-    const quartileErrors = [0, 1, 2, 3].map(i =>
-      errors.filter(e => e.index >= qBounds[i] && e.index < qBounds[i + 1]).length
-    );
-    const quartileRates = quartileErrors.map((e, i) =>
-      quartileTargets[i] > 0 ? e / quartileTargets[i] : 0
-    );
-    const meanRate = quartileRates.reduce((a, b) => a + b, 0) / 4;
-    const rateSd = Math.sqrt(
-      quartileRates.reduce((a, b) => a + Math.pow(b - meanRate, 2), 0) / 4
-    );
-    const dispersionCV = meanRate > 0 ? rateSd / meanRate : 0;
-    const decrementIndex =
-      (quartileRates[2] + quartileRates[3]) / 2 - (quartileRates[0] + quartileRates[1]) / 2;
-
-    const totalErrorCount = omissions + commissions;
-    let distributionProfile;
-    if (totalTargets < 12 || totalErrorCount < 3) {
-      // Guard: ~10% target frequency means a quartile holds only 4-5 targets on a
-      // 3-minute run. Below this floor the distribution is not interpretable.
-      distributionProfile = 'insufficient';
-    } else if (decrementIndex > 0.10) {
-      distributionProfile = 'decrement';
-    } else if (dispersionCV > 0.60) {
-      distributionProfile = 'erratic';
-    } else if (meanRate > 0.15) {
-      distributionProfile = 'flat-low';
-    } else {
-      distributionProfile = 'flat-clean';
-    }
-
     return {
       totalLetters: sequence.length,
       totalTargets,
@@ -675,12 +612,6 @@ function CPTAdmin() {
       firstHalfTargets,
       secondHalfTargets,
       timeDegradation,
-      quartileErrors,
-      quartileTargets,
-      quartileRates,
-      dispersionCV,
-      decrementIndex,
-      distributionProfile,
     };
   }, [sequence, errors, phase]);
 
@@ -734,7 +665,7 @@ function CPTAdmin() {
                 <li>Read each letter aloud as it appears. Instruct the patient to <strong>tap the table or raise a hand</strong> each time they hear the target letter.</li>
                 <li>Target frequency is ~10% (roughly 1 in 10 letters).</li>
                 <li>Mark errors in real time using the buttons below: <strong>Omission</strong> = patient missed a target; <strong>Commission</strong> = patient responded to a non-target.</li>
-                <li>The tool bins errors into quartiles to distinguish <strong>vigilance decrement</strong> (back-loaded errors) from <strong>erratic performance</strong> (inconsistent across the run) and <strong>flat impairment</strong> (poor from onset). An absent decrement does not mean sustained attention was intact.</li>
+                <li>The tool auto-scores first-half vs. second-half performance to detect <strong>time-on-task decline</strong>.</li>
                 <li><strong>Interpretive caveat:</strong> CPT impairment is non-specific. Grant &amp; Chamberlain (2023, n=576) found larger sustained-attention deficits in OCD, social phobia, bulimia nervosa, binge eating disorder, and intermittent explosive disorder than in probable ADHD. A poor result here is a reason to widen the differential, not to narrow it toward ADHD.</li>
               </ul>
             </div>
@@ -887,50 +818,17 @@ function CPTAdmin() {
                 </div>
               </div>
 
-              {(() => {
-                const p = results.distributionProfile;
-                const panelClass =
-                  p === 'flat-clean' ? 'normal' : p === 'insufficient' ? 'info' : 'warn';
-                const body = {
-                  'decrement': <>
-                    <strong>⚠ Vigilance decrement — errors back-loaded</strong>
-                    Errors accumulated toward the end of the run (quartile error rates {results.quartileRates.map(r => r.toFixed(2)).join(' → ')}). This implicates sustained attention — the capacity to maintain vigilance over time — rather than selective attention. Commonly seen in sleep deprivation, depression-related fatigue, and neurocognitive conditions. Per Lockwood et al. (2001, citing Sergeant), decrement is more characteristic of combined-type than of inattentive presentations, so this pattern is not the expected signature of predominantly inattentive ADHD.
-                  </>,
-                  'erratic': <>
-                    <strong>⚠ Erratic performance — inconsistent rather than declining</strong>
-                    Errors were clustered irregularly across the run rather than accumulating (quartile error rates {results.quartileRates.map(r => r.toFixed(2)).join(' → ')}; dispersion CV {results.dispersionCV.toFixed(2)}). This is trial-level variability, not vigilance decay. Do not read the absent decrement as intact sustained attention. Attentional variability is flagged by Albertella et al. (2026) as an emerging transdiagnostic marker, and Lockwood et al. (2001, citing Sergeant) report that inattentive presentations show inconsistency rather than decrement.
-                  </>,
-                  'flat-low': <>
-                    <strong>⚠ Flat impaired performance — poor from onset, no decay</strong>
-                    Errors were distributed evenly across the run at an elevated rate (quartile error rates {results.quartileRates.map(r => r.toFixed(2)).join(' → ')}). Performance was poor from the outset and did not deteriorate further. This is not a fatigue pattern. Per Lockwood et al. (2001, citing Sergeant), consistently poor performance from task onset is one of the described inattentive-presentation profiles; it is also compatible with low arousal, medication effect, or limited task engagement.
-                  </>,
-                  'flat-clean': <>
-                    <strong>No decrement and no marked variability</strong>
-                    Errors were few and evenly distributed (quartile error rates {results.quartileRates.map(r => r.toFixed(2)).join(' → ')}). No evidence of vigilance decay or erratic performance on this run. This does not exclude attentional impairment — CPT performance is non-specific and is frequently normal in symptomatic patients. Weight naturalistic observation above this result.
-                  </>,
-                  'insufficient': <>
-                    <strong>Insufficient events to characterise distribution</strong>
-                    Distribution analysis requires at least 12 targets (≈2 minutes) and at least 3 errors. This run had {results.totalTargets} targets and {results.totalErrors} errors. Total error counts above remain valid; the decrement/variability classification is withheld rather than guessed.
-                  </>,
-                }[p];
-                return (
-                  <div className={`degradation-panel ${panelClass}`}>
-                    {body}
-                    {p !== 'insufficient' && (
-                      <>
-                        <div className="quartile-strip">
-                          {results.quartileErrors.map((e, i) => (
-                            <div key={i}>Q{i + 1}: {e}/{results.quartileTargets[i]}</div>
-                          ))}
-                        </div>
-                        <div style={{ marginTop: 8, fontSize: '0.72rem', opacity: 0.75 }}>
-                          Classification thresholds are arbitrary and unvalidated. With ~10% target frequency a quartile holds only 4–5 targets, so this classification is indicative only.
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })()}
+              {results.timeDegradation ? (
+                <div className="degradation-panel warn">
+                  <strong>⚠ Time-on-Task Decline Detected</strong>
+                  Errors increased from {results.firstHalfErrors} (first half) to {results.secondHalfErrors} (second half). This pattern specifically implicates sustained attention — the ability to maintain vigilance over time — rather than selective attention. It is commonly seen in sleep deprivation, depression-related fatigue, ADHD, and neurocognitive conditions.
+                </div>
+              ) : (
+                <div className="degradation-panel normal">
+                  <strong>No significant time-on-task decline</strong>
+                  Error distribution was stable across halves ({results.firstHalfErrors} first half, {results.secondHalfErrors} second half), suggesting sustained attention was maintained throughout. If errors occurred, they likely reflect selective attention issues rather than vigilance decay.
+                </div>
+              )}
 
               {/* Letter log for review */}
               {sequence && (
@@ -968,8 +866,8 @@ function CPTAdmin() {
 
         <div className="footer">
           Companion to the Clinical Attention Assessment.<br/>
-          Bedside A-vigilance CPT with ~10% target frequency and quartile error-distribution analysis (decrement vs. erratic vs. flat).<br/>
-          CPT performance is non-specific for ADHD (Grant &amp; Chamberlain, <em>CNS Spectr</em> 2023;28(3):357–60). Variability-vs-decrement framing after Lockwood et al., <em>J Clin Exp Neuropsychol</em> 2001;23(3):317–30, citing Sergeant (1989); note that study was n=80 children, DSM-IV, comorbidity-free.<br/>
+          Bedside A-vigilance CPT with ~10% target frequency and first-half/second-half time-on-task analysis.<br/>
+          CPT performance is non-specific for ADHD (Grant &amp; Chamberlain, <em>CNS Spectr</em> 2023;28(3):357–60).<br/>
           Draft tool — not validated. Based on Albertella et al., <em>Psychiatr Clin N Am</em> (2026).
         </div>
       </div>
