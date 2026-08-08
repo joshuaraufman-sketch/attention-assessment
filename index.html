@@ -74,7 +74,7 @@ const SECTIONS = [
           "Lifelong with mood overlay (homotypic)",
           "Cannot determine",
         ],
-        administration: "Per Comparelli et al. (2022) and Faedda's heterotypic trajectory framework, the developmental sequence has diagnostic weight beyond simple course. Probe: 'Were you identified as having attention problems as a child?' 'When did mood symptoms first appear relative to attention symptoms?' 'Did mood episodes start in adolescence or later?' Heterotypic trajectory (childhood ADHD → adult mood episodes) suggests a distinct clinical phenotype with implications for treatment sequencing. Caveat: this distinction rests entirely on retrospective recall, which is unreliable — adult self-recall of childhood ADHD symptoms is accurate ~55% of the time (Breda 2020), and parental recall 20 years later is worse (~23%; Moffitt 2015). Collateral records (school reports, prior evaluations) are more reliable than patient/parent recall when available, but rarely accessible. Where collateral is absent, the trajectory designation should be flagged as recalled rather than established.",
+        administration: "Per Comparelli et al. (2022) and Faedda's heterotypic trajectory framework, the developmental sequence has diagnostic weight beyond simple course. Probe: 'Were you identified as having attention problems as a child?' 'When did mood symptoms first appear relative to attention symptoms?' 'Did mood episodes start in adolescence or later?' Heterotypic trajectory (childhood ADHD → adult mood episodes) suggests a distinct clinical phenotype with implications for treatment sequencing. Caveat: this distinction rests entirely on retrospective recall, which is unreliable — adult self-recall of childhood ADHD symptoms is accurate ~55% of the time (Breda 2020), and parental recall 20 years later is worse (~23%; Moffitt 2015). Collateral records (school reports, prior evaluations) are more reliable than patient/parent recall when available, but rarely accessible. Where collateral is absent, the trajectory designation should be flagged as recalled rather than established. Two directional biases compound this, both pushing toward false positives (Paris et al. 2015): first, memories of past problems are strongly coloured by present symptomatology, so a currently-symptomatic adult will tend to recall childhood difficulty whether or not it occurred; second, adults whose child has been diagnosed frequently infer the diagnosis in themselves, though heritability for adult ADHD is only 30–40%. Ask directly whether a child in the family has been diagnosed, and weight that history accordingly.",
       },
     ],
   },
@@ -82,7 +82,7 @@ const SECTIONS = [
     id: "attentional_tasks",
     title: "Structured Attentional Tasks",
     subtitle: "Serial recitation, continuous performance, and spatial tasks",
-    instructions: 'Administer 3–4 different types of attentional tasks and mentally "factor analyze" the common denominator. These are supplementary to clinical observation, not a replacement. Maintain a non-threatening atmosphere.',
+    instructions: 'Administer 3–4 different types of attentional tasks and mentally "factor analyze" the common denominator. These are supplementary to clinical observation, not a replacement. Maintain a non-threatening atmosphere. NON-SPECIFICITY CAVEAT: poor performance on sustained-attention tasks does not point toward ADHD. In the largest direct transdiagnostic comparison (Grant & Chamberlain 2023, n=576), sustained-attention deficits were larger in OCD, social phobia, bulimia nervosa, binge eating disorder, and intermittent explosive disorder than in probable ADHD; PTSD performance was spared or superior. Read task failure as a reason to widen the differential, not to narrow it toward ADHD.',
     items: [
       { id: "task_1", text: "Digit Span Forward — serial recitation (normal ≥ 5 digits)", administration: "Read a sequence of random digits aloud at a rate of one per second (avoid rhythmic grouping). Start with 3 digits. After each correct repetition, increase by one digit. Give two trials at each length. Record the longest span correctly repeated on at least one of two trials.", anchors: ["≤2 digits", "3 digits", "4 digits", "5 digits", "≥6 digits"] },
       { id: "task_2", text: "Digit Span Backward — working memory component (normal ≥ 3 digits)", administration: "Read a sequence of random digits aloud at one per second. Ask the patient to repeat them in reverse order. Demonstrate with a 2-digit example first. Start with 2 digits. A forward-backward discrepancy of >2 digits suggests a working memory deficit beyond simple attentional impairment.", anchors: ["Unable to perform", "2 digits", "3 digits", "4 digits", "≥5 digits"] },
@@ -197,6 +197,21 @@ const SECTIONS = [
       { id: "ctx_2", text: "Acute stress level at time of assessment", anchors: ["Severe acute stress", "Moderate stress", "Mild stress", "Minimal stress", "Calm/relaxed"] },
       { id: "ctx_3", text: "Medication effects — current psychotropic or other medications with known attentional impact", anchors: ["Likely significant impact", "Probable moderate impact", "Possible mild impact", "Unlikely impact", "No relevant medications"] },
       { id: "ctx_4", text: "Substance use — recent use of substances with attentional effects", anchors: ["Active intoxication/withdrawal", "Recent use (<24h)", "Recent use (24–72h)", "Remote use", "No recent use"] },
+      // Added: prior stimulant exposure. Per Paris et al. (2015), stimulant response is non-specific
+      // and cannot validate an ADHD diagnosis. Qualitative — excluded from the section average.
+      {
+        id: "ctx_stimulant",
+        text: "Prior stimulant exposure — history of stimulant prescription or use, and how it is being used evidentially",
+        isQualitative: true,
+        anchors: [
+          "Patient cites stimulant response as evidence for the diagnosis",
+          "Non-prescribed or diverted stimulant use",
+          "Currently prescribed elsewhere; originating evaluation unavailable",
+          "Prior prescribed trial with documented evaluation available",
+          "No prior stimulant exposure",
+        ],
+        administration: "Ask: \"Have you ever taken a stimulant medication — prescribed or otherwise?\" \"Who prescribed it, and what was the evaluation like?\" \"What happened when you took it?\" Record what the exposure was AND how the patient is deploying it evidentially. Stimulants increase attention and focus in people without ADHD, so a positive subjective response is non-specific and cannot validate the diagnosis (Paris et al. 2015). Subjective benefit also correlates poorly with formal testing, so placebo response may be more common in practice than in trials. A patient who offers \"it works for me\" as diagnostic proof should be redirected toward history, cross-context impairment, and collateral. Prescription originating from an evaluation you cannot review is not confirmatory of anything.",
+      },
       { id: "ctx_5", text: "Time on task — was attentional performance stable or declining as the assessment progressed?", anchors: ["Rapid early decline", "Progressive decline", "Mild late decline", "Stable throughout", "Improved with engagement"] },
       // Revision 5: Triggering factors
       {
@@ -805,6 +820,29 @@ function evaluatePathways(scores, sectionAvgs) {
     conflicts.push({
       label: 'ADHD pattern with heterotypic developmental trajectory',
       text: 'Childhood ADHD with emergence of adult mood episodes (heterotypic trajectory per Faedda) suggests this may be a distinct ADHD-BD comorbid phenotype rather than pure ADHD. Per Comparelli et al. (2022), this constellation has different treatment implications than ADHD without mood-spectrum evolution. Consider mood characterization before or alongside ADHD treatment.',
+    });
+  }
+
+  // Added: task performance is non-specific and does not support ADHD attribution.
+  // Grant & Chamberlain 2023 — OCD, social phobia, bulimia, BED, and IED all showed LARGER
+  // sustained-attention deficits than probable ADHD in direct transdiagnostic comparison.
+  if ((primary.id === 'A-I' || primary.id === 'A-C') && taskAvg != null && taskAvg <= 2.5) {
+    conflicts.push({
+      label: 'Poor task performance does not support ADHD attribution',
+      text: 'Structured attentional tasks are impaired, but task impairment is non-specific and is NOT evidence for ADHD. In direct transdiagnostic comparison (Grant & Chamberlain 2023, n=576), sustained-attention deficits were larger in OCD, social phobia, bulimia nervosa, binge eating disorder, and intermittent explosive disorder than in probable ADHD. Before attributing impaired task performance to an ADHD-pattern process, screen explicitly for obsessive-compulsive symptoms, social anxiety, and disordered eating. A failed CPT should widen the differential rather than narrow it.',
+    });
+  }
+
+  // Added: stimulant exposure / evidential use. Paris et al. 2015 — stimulant response is non-specific.
+  if (s("ctx_stimulant") != null && s("ctx_stimulant") <= 3) {
+    const stimText = {
+      1: 'The patient is offering stimulant response as evidence for the diagnosis. Stimulants improve attention and focus in people without ADHD; response is non-specific and diagnostically uninformative (Paris et al. 2015). Subjective benefit also correlates poorly with formal testing, so placebo response may be more common in practice than in trials. Redirect to history, cross-context impairment, and collateral.',
+      2: 'Non-prescribed or diverted stimulant use is documented. This is relevant both as a confound for current attentional findings (see substance use item) and as context for the presenting complaint. It does not by itself argue for or against an ADHD-pattern process, but it should be addressed directly rather than left implicit.',
+      3: 'The patient is currently prescribed a stimulant on the basis of an evaluation you have not reviewed. An existing prescription is not confirmatory. If ADHD attribution matters for the current formulation, obtain the originating evaluation or re-establish the diagnosis independently.',
+    }[s("ctx_stimulant")];
+    conflicts.push({
+      label: 'Stimulant exposure — non-specific and non-confirmatory',
+      text: stimText,
     });
   }
 
@@ -1471,7 +1509,7 @@ function AttentionAssessment() {
           <details className="epistemic-frame">
             <summary>About this tool — phenomenology, not diagnosis</summary>
             <div className="epistemic-frame-body">
-              <strong>What this tool does:</strong> characterizes the phenomenology and likely mechanisms of attentional dysfunction in the present encounter. Pattern labels (e.g., "ADHD-I consistent," "affective-driven") describe the shape of the presentation, not DSM diagnostic conclusions. The criterion-overlap problem in DSM-5-TR ADHD means apparent comorbidity with mood/anxiety conditions often reflects shared non-specific symptoms rather than true co-occurrence; this tool surfaces phenomenology to help disentangle that, but does not resolve it.
+              <strong>What this tool does:</strong> characterizes the phenomenology and likely mechanisms of attentional dysfunction in the present encounter. Pattern labels (e.g., "ADHD-I consistent," "affective-driven") describe the shape of the presentation, not DSM diagnostic conclusions. The criterion-overlap problem in DSM-5-TR ADHD means apparent comorbidity with mood/anxiety conditions often reflects shared non-specific symptoms rather than true co-occurrence; this tool surfaces phenomenology to help disentangle that, but does not resolve it. <strong>On screeners:</strong> ASRS, Conners, and similar instruments are designed to cast a wide net and carry a built-in high false-positive rate. A positive screen is a reason to assess, not evidence of the diagnosis, and cannot validate one. The same limitation applies to continuous performance testing, which lacks specificity for ADHD.
             </div>
           </details>
         </div>
@@ -1821,6 +1859,7 @@ function AttentionAssessment() {
               Derived from: Albertella L, Lee RSC, Fontenelle LF. Attention and Its Symptoms. <em>Psychiatr Clin N Am.</em> 2026.<br/>
               Pathway logic informed by: Vannucchi et al. (2019) BRIDGE-II-Mix, <em>J Affect Disord</em>; Wilens et al. (2003) <em>Biol Psychiatry</em>; Bertschy et al. (2023) <em>Neuropsychiatr Dis Treat</em>; Comparelli et al. (2022) <em>Front Psychiatry</em>.<br/>
               Engagement-pattern item informed by Groen et al. (2020) <em>Res Dev Disabil</em> 107:103789 and Ayers-Glassey & Smilek (2024) <em>Curr Psychol</em> 43:11254. Per case-control evidence, this pattern is non-discriminating for ADHD; the item is included for clinical formulation and not used in pathway scoring.<br/>
+              <strong>Task non-specificity:</strong> Grant JE, Chamberlain SR. Attentional problems occur across multiple psychiatric disorders and are not specific for ADHD. <em>CNS Spectr</em> 2023;28(3):357–60. <strong>Diagnostic-practice caveats</strong> (stimulant response, screener false-positive rates, retrospective recall bias): Paris J, Bhat V, Thombs B. Is adult ADHD being overdiagnosed? <em>Can J Psychiatry</em> 2015;60(7):324–8.<br/>
               <strong>Criterion-overlap caveat (Szymaniak et al. 2026):</strong> DSM-5-TR ADHD criteria are non-specific — inattention, restlessness, and impulsivity appear across mood, anxiety, substance, and neurocognitive conditions. Frequently-cited comorbidity rates (e.g., the ~3× elevation of ADHD in mood disorders per Sandstrom 2021) likely overstate true co-occurrence because the same underlying disturbance can meet symptom thresholds for multiple categories. When an attentional complaint accompanies an active mood, anxiety, or substance condition, treating the primary condition first — and reassessing attention after — is generally more diagnostically informative than concurrent ADHD attribution. This tool's pathway engine attempts to surface mechanism-level differences (capture source, phenomenology, affective coupling, trajectory) precisely to address this overlap, but it cannot resolve it.<br/>
               <strong>Draft clinical tool — not validated. Observation-based assessment should carry more interpretive weight than structured tasks per the source framework.</strong>
             </div>
