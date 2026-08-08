@@ -294,6 +294,26 @@ const buildCriterion = (label, met, tier) => {
   return { label, met, tier, weight: weights[tier] };
 };
 
+// ──────────────────────────────────────────────────────────────────
+// Item-level advisories — independent of pathway resolution.
+// These are true regardless of whether a pathway fires, so they must NOT
+// live inside evaluatePathways' conflicts array (which is unreachable when
+// minDataMet is false, when no pathway scores, or behind the urgent gates).
+// ──────────────────────────────────────────────────────────────────
+function evaluateItemFlags(scores) {
+  const flags = [];
+  const stim = scores["ctx_stimulant"];
+  if (stim != null && stim <= 3) {
+    const stimText = {
+      1: 'The patient is offering stimulant response as evidence for the diagnosis. Stimulants improve attention and focus in people without ADHD; response is non-specific and diagnostically uninformative (Paris et al. 2015). Subjective benefit also correlates poorly with formal testing, so placebo response may be more common in practice than in trials. Redirect to history, cross-context impairment, and collateral.',
+      2: 'Non-prescribed or diverted stimulant use is documented. This is relevant both as a confound for current attentional findings (see substance use item) and as context for the presenting complaint. It does not by itself argue for or against an ADHD-pattern process, but it should be addressed directly rather than left implicit. Note that non-prescribed stimulant use is itself a contributor to acute confusional states.',
+      3: 'The patient is currently prescribed a stimulant on the basis of an evaluation you have not reviewed. An existing prescription is not confirmatory. If ADHD attribution matters for the current formulation, obtain the originating evaluation or re-establish the diagnosis independently.',
+    }[stim];
+    flags.push({ label: 'Stimulant exposure — non-specific and non-confirmatory', text: stimText });
+  }
+  return flags;
+}
+
 function evaluatePathways(scores, sectionAvgs) {
   const s = (id) => scores[id];
   const obsAvg = sectionAvgs.observation;
@@ -833,19 +853,6 @@ function evaluatePathways(scores, sectionAvgs) {
     });
   }
 
-  // Added: stimulant exposure / evidential use. Paris et al. 2015 — stimulant response is non-specific.
-  if (s("ctx_stimulant") != null && s("ctx_stimulant") <= 3) {
-    const stimText = {
-      1: 'The patient is offering stimulant response as evidence for the diagnosis. Stimulants improve attention and focus in people without ADHD; response is non-specific and diagnostically uninformative (Paris et al. 2015). Subjective benefit also correlates poorly with formal testing, so placebo response may be more common in practice than in trials. Redirect to history, cross-context impairment, and collateral.',
-      2: 'Non-prescribed or diverted stimulant use is documented. This is relevant both as a confound for current attentional findings (see substance use item) and as context for the presenting complaint. It does not by itself argue for or against an ADHD-pattern process, but it should be addressed directly rather than left implicit.',
-      3: 'The patient is currently prescribed a stimulant on the basis of an evaluation you have not reviewed. An existing prescription is not confirmatory. If ADHD attribution matters for the current formulation, obtain the originating evaluation or re-establish the diagnosis independently.',
-    }[s("ctx_stimulant")];
-    conflicts.push({
-      label: 'Stimulant exposure — non-specific and non-confirmatory',
-      text: stimText,
-    });
-  }
-
   // ── Build modifiers list ──
   const modifiers = [];
   if (highVar) modifiers.push("Marked variability");
@@ -873,9 +880,10 @@ function evaluatePathways(scores, sectionAvgs) {
 
   // ── Implication ──
   let implication = "";
-  if ((primary.id === 'A-I' || primary.id === 'A-C') && conflicts.length === 0) {
+  const itemFlagCount = evaluateItemFlags(scores).length;
+  if ((primary.id === 'A-I' || primary.id === 'A-C') && conflicts.length === 0 && itemFlagCount === 0) {
     implication = "Findings are consistent with an ADHD-pattern presentation. Proceed with confirmatory evaluation.";
-  } else if ((primary.id === 'A-I' || primary.id === 'A-C') && conflicts.length > 0) {
+  } else if ((primary.id === 'A-I' || primary.id === 'A-C') && (conflicts.length > 0 || itemFlagCount > 0)) {
     implication = "ADHD pattern present but conflicts exist. Address the flagged issues before diagnosing.";
   } else if (primary.bridgePhenotype) {
     implication = "Mood-spectrum characterization is the priority. Stimulant monotherapy is contraindicated until mood is stabilized.";
@@ -1281,6 +1289,8 @@ function AttentionAssessment() {
     Object.keys(scores).filter(k => k.startsWith('dyn_')).length >= 3
   );
   const pathwayResult = minDataMet ? evaluatePathways(scores, sectionAvgs) : null;
+  // Item-level advisories render independently of the pathway engine.
+  const itemFlags = evaluateItemFlags(scores);
 
   const PATTERN_CHIPS = [
     "Stable trait inattentive pattern (ADHD-I consistent)",
@@ -1384,6 +1394,12 @@ function AttentionAssessment() {
       }
     }
 
+    const noteItemFlags = evaluateItemFlags(scores);
+    if (noteItemFlags.length > 0) {
+      lines.push(`Advisories: ${noteItemFlags.map(f => `${f.label} — ${f.text}`).join("; ")}`);
+      lines.push("");
+    }
+
     lines.push("Draft tool — not validated. Based on Albertella et al., Psychiatr Clin N Am (2026).");
     return lines.join("\n");
   }, [scores, patientInfo, formulation, pathwayResult, sectionAvgs]);
@@ -1476,6 +1492,15 @@ function AttentionAssessment() {
     }
 
     lines.push(hr);
+    const recItemFlags = evaluateItemFlags(scores);
+    if (recItemFlags.length > 0) {
+      lines.push(hr);
+      lines.push("ITEM-LEVEL ADVISORIES");
+      lines.push(hr);
+      recItemFlags.forEach(f => lines.push(`⚠ ${f.label}: ${f.text}`));
+      lines.push("");
+    }
+
     lines.push("Draft tool — not validated. Based on Albertella et al., Psychiatr Clin N Am (2026).");
     return lines.join("\n");
   }, [scores, patientInfo, formulation, globalAvg, pathwayResult, autoScores]);
@@ -1661,6 +1686,14 @@ function AttentionAssessment() {
                 </div>
               </div>
             )}
+
+            {/* Item-level advisories — render regardless of pathway resolution */}
+            {itemFlags.map((f, i) => (
+              <div className="dx-conflict" key={`itemflag-${i}`} style={{ marginTop: 12 }}>
+                <div className="dx-conflict-title">⚠ {f.label}</div>
+                <div className="dx-conflict-text">{f.text}</div>
+              </div>
+            ))}
 
             {/* Domain scores */}
             <div className="summary-grid">
