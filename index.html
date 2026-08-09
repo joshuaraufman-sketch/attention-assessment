@@ -26,6 +26,15 @@ const SECTIONS = [
       { id: "obs_4", text: "Psychomotor presentation (hypoactivity, hyperactivity, tremor, myoclonus, or other movement abnormalities)", anchors: ["Marked abnormality", "Moderate abnormality", "Mild abnormality", "Questionable finding", "No abnormality observed"] },
       { id: "obs_5", text: 'Subjective report — does the patient describe their thinking as "foggy/cloudy" vs "sharp/clear"?', anchors: ["Reports marked fogginess", "Reports moderate fogginess", "Reports mild fogginess", "Reports mostly clear", "Reports sharp and clear"] },
       { id: "obs_6", text: "Facial expression and apparent perplexity (wide-eyed, bewildered appearance)", anchors: ["Markedly perplexed", "Moderately perplexed", "Mildly perplexed", "Questionable", "Alert and appropriate"] },
+      { id: "a2_a", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "Fidgets or taps hands or feet; squirms in seat", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "Code from direct observation of this encounter wherever possible. Anchor 3 is for symptoms you did not observe but that were reported. Anchor 5 asserts you actively looked and it was not present — do not use it for symptoms you simply had no opportunity to observe; leave those unrated. DSM-5-TR notes that signs may be minimal or absent when the individual is in a novel setting or interacting one-on-one, as in the clinician's office, so non-observation is not evidence of absence." },
+      { id: "a2_b", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "Leaves seat when remaining seated is expected", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "Code from direct observation of this encounter wherever possible. Anchor 3 is for symptoms you did not observe but that were reported. Anchor 5 asserts you actively looked and it was not present — do not use it for symptoms you simply had no opportunity to observe; leave those unrated. DSM-5-TR notes that signs may be minimal or absent when the individual is in a novel setting or interacting one-on-one, as in the clinician's office, so non-observation is not evidence of absence." },
+      { id: "a2_c", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "Subjective feelings of restlessness (adult equivalent of running or climbing)", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "REPORT-ONLY item — this symptom is not observable in an office encounter, so anchors 1 and 2 will rarely apply. DSM-5-TR defines the adult form of this symptom as an internal or out-of-clinic experience. Code from history using anchor 3, or leave unrated." },
+      { id: "a2_d", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "Unable to engage in leisure activities quietly", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "REPORT-ONLY item — this symptom is not observable in an office encounter, so anchors 1 and 2 will rarely apply. DSM-5-TR defines the adult form of this symptom as an internal or out-of-clinic experience. Code from history using anchor 3, or leave unrated." },
+      { id: "a2_e", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "On the go / driven by a motor; uncomfortable being still for extended time", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "Code from direct observation of this encounter wherever possible. Anchor 3 is for symptoms you did not observe but that were reported. Anchor 5 asserts you actively looked and it was not present — do not use it for symptoms you simply had no opportunity to observe; leave those unrated. DSM-5-TR notes that signs may be minimal or absent when the individual is in a novel setting or interacting one-on-one, as in the clinician's office, so non-observation is not evidence of absence." },
+      { id: "a2_f", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "Talks excessively", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "Code from direct observation of this encounter wherever possible. Anchor 3 is for symptoms you did not observe but that were reported. Anchor 5 asserts you actively looked and it was not present — do not use it for symptoms you simply had no opportunity to observe; leave those unrated. DSM-5-TR notes that signs may be minimal or absent when the individual is in a novel setting or interacting one-on-one, as in the clinician's office, so non-observation is not evidence of absence." },
+      { id: "a2_g", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "Blurts out answers before questions are completed", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "Code from direct observation of this encounter wherever possible. Anchor 3 is for symptoms you did not observe but that were reported. Anchor 5 asserts you actively looked and it was not present — do not use it for symptoms you simply had no opportunity to observe; leave those unrated. DSM-5-TR notes that signs may be minimal or absent when the individual is in a novel setting or interacting one-on-one, as in the clinician's office, so non-observation is not evidence of absence." },
+      { id: "a2_h", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "Difficulty waiting turn", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "Code from direct observation of this encounter wherever possible. Anchor 3 is for symptoms you did not observe but that were reported. Anchor 5 asserts you actively looked and it was not present — do not use it for symptoms you simply had no opportunity to observe; leave those unrated. DSM-5-TR notes that signs may be minimal or absent when the individual is in a novel setting or interacting one-on-one, as in the clinician's office, so non-observation is not evidence of absence." },
+      { id: "a2_i", group: "DSM-5-TR Criterion A2 \u2014 Hyperactivity / Impulsivity (documentation only)", isQualitative: true, text: "Interrupts or intrudes on others", anchors: ["Present — directly observed this encounter", "Present — observed, equivocal or brief", "Present — not observed; reported by patient or informant", "Subthreshold", "Absent — actively looked for, not present"], administration: "Code from direct observation of this encounter wherever possible. Anchor 3 is for symptoms you did not observe but that were reported. Anchor 5 asserts you actively looked and it was not present — do not use it for symptoms you simply had no opportunity to observe; leave those unrated. DSM-5-TR notes that signs may be minimal or absent when the individual is in a novel setting or interacting one-on-one, as in the clinician's office, so non-observation is not evidence of absence." },
     ],
   },
   {
@@ -76,6 +85,10 @@ const SECTIONS = [
         ],
         administration: "Per Comparelli et al. (2022) and Faedda's heterotypic trajectory framework, the developmental sequence has diagnostic weight beyond simple course. Probe: 'Were you identified as having attention problems as a child?' 'When did mood symptoms first appear relative to attention symptoms?' 'Did mood episodes start in adolescence or later?' Heterotypic trajectory (childhood ADHD → adult mood episodes) suggests a distinct clinical phenotype with implications for treatment sequencing. Caveat: this distinction rests entirely on retrospective recall, which is unreliable — adult self-recall of childhood ADHD symptoms is accurate ~55% of the time (Breda 2020), and parental recall 20 years later is worse (~23%; Moffitt 2015). Collateral records (school reports, prior evaluations) are more reliable than patient/parent recall when available, but rarely accessible. Where collateral is absent, the trajectory designation should be flagged as recalled rather than established. Two directional biases compound this, both pushing toward false positives (Paris et al. 2015): first, memories of past problems are strongly coloured by present symptomatology, so a currently-symptomatic adult will tend to recall childhood difficulty whether or not it occurred; second, adults whose child has been diagnosed frequently infer the diagnosis in themselves, though heritability for adult ADHD is only 30–40%. Ask directly whether a child in the family has been diagnosed, and weight that history accordingly.",
       },
+      { id: "dsm_impairment", group: "DSM-5-TR Criteria B\u2013E \u2014 Context, History, Qualifiers (documentation only)", isQualitative: true, text: "Functional impairment \u2014 identifiable consequences attributable to the attentional difficulty (Criterion D)", anchors: ["Documented consequences across multiple domains (job loss or discipline, academic failure, relationship breakdown, financial or legal sequelae)", "Clear consequences in one domain", "Consequences reported but non-specific or unverified", "Difficulty described without identifiable functional consequence", "No functional impairment identified"], administration: "Ask for consequences, not complaints. Distinguish subjective distress from impairment: DSM-5-TR requires clear evidence that symptoms interfere with or reduce the quality of social, academic, or occupational functioning. Elicit dated, concrete events — a written warning, a failed course, a specific missed deadline with a named consequence. An unverified self-report of underperforming relative to potential is not clear evidence and should be coded 3 or lower." },
+      { id: "dsm_duration", group: "DSM-5-TR Criteria B\u2013E \u2014 Context, History, Qualifiers (documentation only)", isQualitative: true, text: "Symptom persistence \u2014 duration and developmental incongruity of the symptoms coded above (Criterion A qualifier)", anchors: ["Persistent ≥ 6 months and clearly inconsistent with developmental level", "Persistent ≥ 6 months, developmental incongruity uncertain", "Duration uncertain or approaching 6 months", "Symptoms present < 6 months", "Symptoms episodic rather than persistent"], administration: "DSM-5-TR requires each counted symptom to have persisted at least 6 months to a degree that is inconsistent with developmental level. This item gates the whole of Criterion A: if duration is not established, symptom counts above do not establish A regardless of total. Episodic symptomatology (anchor 5) argues actively against Criterion A and toward a mood-spectrum process." },
+      { id: "dsm_not_oppositional", group: "DSM-5-TR Criteria B\u2013E \u2014 Context, History, Qualifiers (documentation only)", isQualitative: true, text: "Symptoms not solely attributable to oppositionality or task incomprehension (Criterion A note)", anchors: ["Clearly independent of oppositionality, hostility, or comprehension failure", "Largely independent, minor overlap", "Uncertain — some symptoms may reflect task refusal or misunderstanding", "Substantially attributable to oppositionality or comprehension failure", "Symptoms occur solely in the context of oppositionality or task incomprehension"], administration: "The DSM-5-TR Criterion A note excludes symptoms that are solely a manifestation of oppositional behavior, defiance, hostility, or a failure to understand tasks or instructions. Probe whether apparent inattention appears selectively in situations the patient resents or does not understand. This gate applies to both A1 and A2." },
+      { id: "dsm_collateral", group: "DSM-5-TR Criteria B\u2013E \u2014 Context, History, Qualifiers (documentation only)", isQualitative: true, text: "Collateral / informant availability for childhood onset and cross-setting confirmation (Criteria B and C)", anchors: ["Informant interviewed directly, covering childhood and at least two current settings", "Informant interviewed, partial coverage", "Records available (school, prior evaluation) but no informant interview", "Informant identified but not yet contacted", "No collateral available — self-report only"], administration: "DSM-5-TR states that adult recall of childhood symptoms tends to be unreliable and that ancillary information is beneficial, and that confirmation of substantial symptoms across settings typically cannot be done accurately without consulting informants who have seen the individual in those settings. Criteria B and C are therefore reported as UNESTABLISHED without collateral, regardless of how confidently the patient reports them. Record who the informant is and which settings they can speak to." },
     ],
   },
   {
@@ -172,6 +185,15 @@ const SECTIONS = [
         administration: "Compare the patient's subjective report with actual performance. Overconfidence is associated with compulsive phenotypes and anosognosia. Underconfidence is common in depression and anxiety.",
       },
       { id: "dyn_6", text: "Attentional bias — attention captured by disorder-specific stimuli (e.g., substance cues, threat cues, somatic sensations)", anchors: ["Marked bias observed", "Moderate bias", "Mild bias", "Questionable", "No bias observed"] },
+      { id: "a1_a", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Careless mistakes; misses details in work or other activities", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
+      { id: "a1_b", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Difficulty sustaining attention in tasks, lectures, conversations, or lengthy reading", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
+      { id: "a1_c", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Appears not to listen when spoken to directly", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
+      { id: "a1_d", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Does not follow through on instructions; fails to finish work or chores", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
+      { id: "a1_e", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Difficulty organizing tasks; poor time management; misses deadlines", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
+      { id: "a1_f", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Avoids or is reluctant to engage in tasks requiring sustained mental effort", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
+      { id: "a1_g", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Loses items necessary for tasks (keys, wallet, paperwork, phone, tools)", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
+      { id: "a1_h", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Easily distracted by extraneous stimuli or unrelated thoughts", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
+      { id: "a1_i", group: "DSM-5-TR Criterion A1 \u2014 Inattention (documentation only)", isQualitative: true, text: "Forgetful in daily activities (bills, calls, appointments, errands)", anchors: ["Present — spontaneously described, with concrete recent incident", "Present — spontaneously described, general", "Present — endorsed only after direct probe", "Subthreshold — occasional, not inconsistent with developmental level", "Absent / denied"], administration: "Code from the patient's spontaneous narrative wherever possible. Do not read this list aloud and do not name the symptom before asking. Elicit with open prompts (a typical workday walkthrough; what fell through the cracks in the last month; how a specific piece of paperwork was handled; what happens in a queue), then code afterward. Anchor to concrete dated incidents rather than frequency judgments: ask when a phone or set of keys was last replaced, not whether things are often lost. Anchor 1 requires a specific recent incident. Anchor 3 records that the symptom emerged only after you named it, which is documented as weaker provenance. Leave unrated if not assessed. DSM-5-TR additionally requires persistence of at least 6 months at a degree inconsistent with developmental level and directly impacting social or occupational functioning — see the duration gate." },
     ],
   },
   {
@@ -293,6 +315,102 @@ const buildCriterion = (label, met, tier) => {
   const weights = { anchor: 3, supporting: 2, consistent: 1 };
   return { label, met, tier, weight: weights[tier] };
 };
+
+// ──────────────────────────────────────────────────────────────────
+// DSM-5-TR criterion coverage — DOCUMENTATION ONLY.
+// Feeds nothing into evaluatePathways or evaluateItemFlags. Criterion E is
+// read FROM the pathway engine, never the reverse. This block must never
+// assert that criteria are met; it reports per-criterion status only.
+// ──────────────────────────────────────────────────────────────────
+const DSM_A1_IDS = ["a1_a","a1_b","a1_c","a1_d","a1_e","a1_f","a1_g","a1_h","a1_i"];
+const DSM_A2_IDS = ["a2_a","a2_b","a2_c","a2_d","a2_e","a2_f","a2_g","a2_h","a2_i"];
+const DSM_ADULT_THRESHOLD = 5; // DSM-5-TR: age 17 and older
+
+function tallyDsmDomain(scores, ids) {
+  const t = { present: 0, strong: 0, weak: 0, sub: 0, absent: 0, notAssessed: 0 };
+  ids.forEach(id => {
+    const v = scores[id];
+    if (v == null) { t.notAssessed++; return; }
+    if (v <= 3) t.present++;
+    if (v === 1 || v === 2) t.strong++;
+    if (v === 3) t.weak++;
+    if (v === 4) t.sub++;
+    if (v === 5) t.absent++;
+  });
+  return t;
+}
+
+function evaluateDsmCoverage(scores, pathwayResult) {
+  const a1 = tallyDsmDomain(scores, DSM_A1_IDS);
+  const a2 = tallyDsmDomain(scores, DSM_A2_IDS);
+  const anyRated = (a1.present + a1.sub + a1.absent + a2.present + a2.sub + a2.absent) > 0;
+
+  const collateral = scores["dsm_collateral"];
+  const hasCollateral = collateral != null && collateral <= 3;
+
+  // Criterion B — onset before 12. temp_4 is nominal, not ordinal.
+  let b;
+  const t4 = scores["temp_4"];
+  if (t4 == null) b = { status: "NOT ASSESSED", detail: "developmental trajectory not rated" };
+  else if (t4 === 3) b = { status: "CONTRADICTED", detail: "adult-onset symptoms, no childhood history" };
+  else if (t4 === 5) b = { status: "UNESTABLISHED", detail: "trajectory could not be determined" };
+  else if (hasCollateral) b = { status: "ESTABLISHED", detail: "childhood history supported by collateral" };
+  else b = { status: "UNESTABLISHED", detail: "childhood history recalled, no collateral" };
+
+  // Criterion C — two or more settings. temp_3 runs 1 = isolated → 5 = pervasive.
+  let c;
+  const t3 = scores["temp_3"];
+  if (t3 == null) c = { status: "NOT ASSESSED", detail: "cross-context pattern not rated" };
+  else if (t3 <= 2) c = { status: "CONTRADICTED", detail: "symptoms largely confined to one setting" };
+  else if (hasCollateral) c = { status: "ESTABLISHED", detail: "multi-setting pattern with informant confirmation" };
+  else c = { status: "UNESTABLISHED", detail: "multi-setting pattern reported, no informant" };
+
+  // Criterion D — functional impairment
+  let d;
+  const di = scores["dsm_impairment"];
+  if (di == null) d = { status: "NOT ASSESSED", detail: "impairment not rated" };
+  else if (di <= 2) d = { status: "ESTABLISHED", detail: "identifiable functional consequences" };
+  else if (di === 3) d = { status: "UNESTABLISHED", detail: "consequences reported but unverified" };
+  else d = { status: "CONTRADICTED", detail: "no identifiable functional consequence" };
+
+  // Criterion E — read directly from the pathway engine
+  let e;
+  if (!pathwayResult) e = { status: "NOT ASSESSED", detail: "diagnostic engine has insufficient data" };
+  else if (pathwayResult.isUrgent) e = { status: "CONTRADICTED", detail: `primary pattern is "${pathwayResult.primary.label}"` };
+  else if (pathwayResult.primary.id === 'A-I' || pathwayResult.primary.id === 'A-C') e = { status: "ESTABLISHED", detail: "no alternative process identified by the diagnostic engine" };
+  else e = { status: "CONTRADICTED", detail: `primary pattern is "${pathwayResult.primary.label}"` };
+
+  const gate = (id, okMax, labels) => {
+    const v = scores[id];
+    if (v == null) return { status: "NOT ASSESSED", detail: labels.na };
+    if (v <= okMax) return { status: "ESTABLISHED", detail: labels.ok };
+    if (v === okMax + 1) return { status: "UNESTABLISHED", detail: labels.unc };
+    return { status: "CONTRADICTED", detail: labels.bad };
+  };
+  const gDur = gate("dsm_duration", 2, { na: "duration not rated", ok: "persistent ≥ 6 months", unc: "duration uncertain", bad: "symptoms not persistent ≥ 6 months" });
+  const gOpp = gate("dsm_not_oppositional", 2, { na: "not rated", ok: "independent of oppositionality or comprehension failure", unc: "possible overlap with task refusal or misunderstanding", bad: "substantially attributable to oppositionality or comprehension failure" });
+
+  const criteria = { b, c, d, e, duration: gDur, oppositional: gOpp };
+  const contradicted = Object.keys(criteria).filter(k => criteria[k].status === "CONTRADICTED");
+  const unestablished = Object.keys(criteria).filter(k => criteria[k].status === "UNESTABLISHED" || criteria[k].status === "NOT ASSESSED");
+
+  const a1Met = a1.present >= DSM_ADULT_THRESHOLD;
+  const a2Met = a2.present >= DSM_ADULT_THRESHOLD;
+
+  const parts = [];
+  if (a1Met || a2Met) {
+    parts.push(`${[a1Met ? "A1" : null, a2Met ? "A2" : null].filter(Boolean).join(" and ")} threshold met on symptom count.`);
+  } else {
+    parts.push(`Neither A1 (${a1.present}/9) nor A2 (${a2.present}/9) reaches the adult threshold of ${DSM_ADULT_THRESHOLD}.`);
+  }
+  if (contradicted.length > 0) parts.push(`Criteria actively contradicted by these findings: ${contradicted.map(k => k.toUpperCase()).join(", ")}.`);
+  if (unestablished.length > 0) parts.push(`Not established: ${unestablished.map(k => k.toUpperCase()).join(", ")}.`);
+  parts.push(contradicted.length > 0 || unestablished.length > 0
+    ? "Criterion coverage is incomplete; this assessment does not document a complete DSM-5-TR criterion set."
+    : "All criteria documented as established on this assessment. This is a coverage record, not a diagnostic determination.");
+
+  return { a1, a2, a1Met, a2Met, criteria, anyRated, summary: parts.join(" ") };
+}
 
 // ──────────────────────────────────────────────────────────────────
 // Item-level advisories — independent of pathway resolution.
@@ -993,6 +1111,23 @@ const css = `
   .section-instructions { padding: 14px 20px; background: var(--c-accent-light); font-size: 0.82rem; font-weight: 500; color: var(--c-accent); line-height: 1.5; border-bottom: 1px solid var(--c-border-light); }
   .section-body { padding: 8px 0; }
 
+  .item-group { border-top: 1px solid var(--c-border); background: var(--c-bg); }
+  .item-group-summary {
+    padding: 12px 20px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--c-text-secondary);
+    list-style: none;
+  }
+  .item-group-summary::-webkit-details-marker { display: none; }
+  .item-group-summary::before { content: "▸\u00a0"; color: var(--c-text-muted); }
+  .item-group[open] > .item-group-summary::before { content: "▾\u00a0"; }
+  .item-group[open] > .item-group-summary { border-bottom: 1px solid var(--c-border-light); }
+  .item-group-body { background: var(--c-surface); }
+
   .item { padding: 14px 20px; border-bottom: 1px solid var(--c-border-light); }
   .item:last-child { border-bottom: none; }
   .item-text { font-size: 0.88rem; font-weight: 500; color: var(--c-text); line-height: 1.5; margin-bottom: 10px; }
@@ -1492,6 +1627,39 @@ function AttentionAssessment() {
     }
 
     lines.push(hr);
+    const cov = evaluateDsmCoverage(scores, pathwayResult);
+    if (cov.anyRated) {
+      const pv = (t) => `${t.present} of 9 present` + (t.present > 0 ? ` (${t.strong} strong provenance, ${t.weak} weak)` : "") + `; ${t.sub} subthreshold, ${t.absent} absent, ${t.notAssessed} not assessed`;
+      lines.push(hr);
+      lines.push("DSM-5-TR CRITERION COVERAGE");
+      lines.push(hr);
+      lines.push("Documentation aid. Not a diagnostic determination. This tool does not assess symptom validity.");
+      lines.push("");
+      lines.push(`A1  Inattention (\u2265${DSM_ADULT_THRESHOLD} required, age 17+):  ${pv(cov.a1)}`);
+      lines.push("      strong = spontaneously described; weak = endorsed only after direct probe");
+      lines.push(`A2  Hyperactivity/Impulsivity (\u2265${DSM_ADULT_THRESHOLD} required):  ${pv(cov.a2)}`);
+      lines.push("      strong = directly observed; weak = reported, not observed");
+      lines.push("      DSM-5-TR notes signs may be minimal or absent in one-on-one office settings.");
+      lines.push("      Non-observation is not evidence of absence.");
+      lines.push("");
+      const row = (k, label) => lines.push(`${label.padEnd(34)}${cov.criteria[k].status} \u2014 ${cov.criteria[k].detail}`);
+      row("b", "B   Onset before age 12");
+      lines.push("      DSM-5-TR: adult recall of childhood symptoms tends to be unreliable;");
+      lines.push("      ancillary information is beneficial.");
+      row("c", "C   Two or more settings");
+      lines.push("      DSM-5-TR: cross-setting confirmation typically cannot be done accurately");
+      lines.push("      without consulting informants who have seen the individual in those settings.");
+      row("d", "D   Functional impairment");
+      row("e", "E   Not better explained");
+      lines.push("");
+      row("duration", "    Qualifier: \u22656 months");
+      row("oppositional", "    Qualifier: not oppositional");
+      lines.push("");
+      lines.push("COVERAGE SUMMARY");
+      lines.push(cov.summary);
+      lines.push("");
+    }
+
     const recItemFlags = evaluateItemFlags(scores);
     if (recItemFlags.length > 0) {
       lines.push(hr);
@@ -1576,7 +1744,8 @@ function AttentionAssessment() {
                     </div>
                   )}
                   <div className="section-body">
-                    {section.items.map(item => {
+                    {(() => {
+                    const renderItem = (item) => {
                       const autoInfo = autoScores[item.id];
                       return (
                         <div className={`item ${autoInfo ? 'item-auto' : ''}`} key={item.id}>
@@ -1608,7 +1777,24 @@ function AttentionAssessment() {
                           </div>
                         </div>
                       );
-                    })}
+                    };
+                    const ungrouped = section.items.filter(i => !i.group);
+                    const groupNames = [];
+                    section.items.forEach(i => { if (i.group && groupNames.indexOf(i.group) === -1) groupNames.push(i.group); });
+                    return (
+                      <>
+                        {ungrouped.map(renderItem)}
+                        {groupNames.map(g => (
+                          <details className="item-group" key={g}>
+                            <summary className="item-group-summary">{g}</summary>
+                            <div className="item-group-body">
+                              {section.items.filter(i => i.group === g).map(renderItem)}
+                            </div>
+                          </details>
+                        ))}
+                      </>
+                    );
+                    })()}
                   </div>
                 </>
               )}
